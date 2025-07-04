@@ -223,13 +223,12 @@ class CompressedRolloutBuffer(RolloutBuffer):
             if remainder:
                 slide_len.append(remainder)
             if self.rle_like:
-                len_arr = (np.frombuffer(self.len_arr[idx][i], self.dtypes["len_type"]) for i in range(slice_num))
-                pos_arr = (np.frombuffer(self.pos_arr[idx][i], self.dtypes["pos_type"]) for i in range(slice_num))
-                elem_arr = (np.frombuffer(self.observations[idx][i], self.dtypes["elem_type"]) for i in range(
-                    slice_num))
+                len_arr = (np.frombuffer(data, self.dtypes["len_type"]) for data in self.len_arr[idx])
+                pos_arr = (np.frombuffer(data, self.dtypes["pos_type"]) for data in self.pos_arr[idx])
+                elem_arr = (np.frombuffer(data, self.dtypes["elem_type"]) for data in self.observations[idx])
             else:
                 len_arr = pos_arr = [None] * slice_num
-                elem_arr = (self.observations[idx][i] for i in range(slice_num))
+                elem_arr = self.observations[idx]
             dtype = self.flatten_config["dtype"]
 
             buffer = []
@@ -240,11 +239,11 @@ class CompressedRolloutBuffer(RolloutBuffer):
             obs = np.concatenate(buffer, dtype=dtype).reshape(self.obs_shape)
             return th.from_numpy(obs).to(self.device, th.float32)
         if self.rle_like:
-            len_arr = np.frombuffer(self.len_arr[idx][0], self.dtypes["len_type"])
-            pos_arr = np.frombuffer(self.pos_arr[idx][0], self.dtypes["pos_type"])
+            len_arr = np.frombuffer(self.len_arr[idx, 0], self.dtypes["len_type"])
+            pos_arr = np.frombuffer(self.pos_arr[idx, 0], self.dtypes["pos_type"])
         else:
             len_arr = pos_arr = None
-        elem_arr = np.frombuffer(self.observations[idx][0], self.dtypes["elem_type"])
+        elem_arr = np.frombuffer(self.observations[idx, 0], self.dtypes["elem_type"])
         obs = self.decompress(len_arr, pos_arr, elem_arr, arr_configs=self.flatten_config,
                               **self.decompression_kwargs).reshape(self.obs_shape)
         return th.from_numpy(obs).to(self.device, th.float32)
