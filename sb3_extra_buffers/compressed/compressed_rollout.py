@@ -2,27 +2,18 @@ from typing import Literal, Generator, Optional, Union
 
 import warnings
 from functools import partial
-from collections import namedtuple
 import numpy as np
 import torch as th
 from gymnasium import spaces
 from stable_baselines3.common.buffers import BaseBuffer, RolloutBuffer, RolloutBufferSamples, VecNormalize
-from sb3_extra_buffers.compressed.compression_methods import rle_compress, rle_decompress
-from sb3_extra_buffers.compressed.compression_methods import gzip_compress, gzip_decompress
+from sb3_extra_buffers.compressed.compression_methods import _compression_method_mapping
 from sb3_extra_buffers.compressed.utils import find_optimal_shape
-
-CompressionMethods = namedtuple("CompressionMethod", ["compress", "decompress", "rle_like"])
-
-_compression_method_mapping = {
-    "rle": CompressionMethods(compress=rle_compress, decompress=rle_decompress, rle_like=True),
-    "gzip": CompressionMethods(compress=gzip_compress, decompress=gzip_decompress, rle_like=False),
-}
 
 
 class CompressedRolloutBuffer(RolloutBuffer):
     observations: np.ndarray[object]
-    len_arr: Optional[np.ndarray[object]]
-    pos_arr: Optional[np.ndarray[object]]
+    len_arr: Optional[np.ndarray[object]] = None
+    pos_arr: Optional[np.ndarray[object]] = None
     actions: np.ndarray
     rewards: np.ndarray
     advantages: np.ndarray
@@ -42,7 +33,7 @@ class CompressedRolloutBuffer(RolloutBuffer):
         n_envs: int = 1,
         dtypes: Optional[dict] = None,
         normalize_images: bool = False,
-        compression_method: Literal["rle"] = "rle",
+        compression_method: Literal["rle", "gzip", "none"] = "rle",
         compression_kwargs: Optional[dict] = None,
         decompression_kwargs: Optional[dict] = None,
         auto_slice: bool = False,

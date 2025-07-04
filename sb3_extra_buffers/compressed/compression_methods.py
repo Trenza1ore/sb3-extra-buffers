@@ -1,5 +1,8 @@
 import gzip
+from collections import namedtuple
 import numpy as np
+
+CompressionMethods = namedtuple("CompressionMethod", ["compress", "decompress", "rle_like"])
 
 
 def rle_compress(arr: np.ndarray, len_type: np.dtype = np.uint16, pos_type: np.dtype = np.uint16,
@@ -46,7 +49,26 @@ def gzip_compress(arr: np.ndarray, len_type: None = None, pos_type: None = None,
     return None, None, gzip.compress(arr, compresslevel=compresslevel, **kwargs)
 
 
-def gzip_decompress(len_arr: None, pos_arr: None, elements: np.ndarray, arr_configs: None,
+def gzip_decompress(len_arr: None, pos_arr: None, elements: bytes, arr_configs: None,
                     elem_type: np.dtype = np.uint8) -> np.ndarray:
     """gzip Decompression"""
     return np.frombuffer(gzip.decompress(elements), dtype=elem_type)
+
+
+def no_compress(arr: np.ndarray, len_type: None = None, pos_type: None = None, elem_type: np.dtype = np.uint8,
+                **kwargs) -> tuple[None, None, bytes]:
+    """Skip Compression"""
+    return None, None, arr.astype(elem_type).tobytes()
+
+
+def no_decompress(len_arr: None, pos_arr: None, elements: bytes, arr_configs: None,
+                  elem_type: np.dtype = np.uint8) -> np.ndarray:
+    """Skip Decompression"""
+    return np.frombuffer(elements, dtype=elem_type)
+
+
+_compression_method_mapping: dict[str, CompressionMethods] = {
+    "rle": CompressionMethods(compress=rle_compress, decompress=rle_decompress, rle_like=True),
+    "gzip": CompressionMethods(compress=gzip_compress, decompress=gzip_decompress, rle_like=False),
+    "none": CompressionMethods(compress=no_compress, decompress=no_decompress, rle_like=False),
+}
