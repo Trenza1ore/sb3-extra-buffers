@@ -23,7 +23,7 @@ setup(
         "stable_baselines3",
     ],
     extras_require={
-        "isal": ["python-isal"],
+        "isal": ["isal"],
     },
     # PyPI package information.
     project_urls={
