@@ -22,6 +22,9 @@ setup(
     install_requires=[
         "stable_baselines3",
     ],
+    extras_require={
+        "isal": ["python-isal"],
+    },
     # PyPI package information.
     project_urls={
         "Code": "https://github.com/Trenza1ore/sb3-extra-buffers",
