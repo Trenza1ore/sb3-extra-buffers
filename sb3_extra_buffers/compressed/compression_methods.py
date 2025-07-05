@@ -1,4 +1,8 @@
 import gzip
+try:
+    import isal.igzip as igzip
+except:
+    igzip = gzip
 from collections import namedtuple
 import numpy as np
 
@@ -53,6 +57,18 @@ def gzip_decompress(len_arr: None, pos_arr: None, elements: bytes, arr_configs: 
                     elem_type: np.dtype = np.uint8) -> np.ndarray:
     """gzip Decompression"""
     return np.frombuffer(gzip.decompress(elements), dtype=elem_type)
+
+
+def igzip_compress(arr: np.ndarray, len_type: None = None, pos_type: None = None, elem_type: np.dtype = np.uint8,
+                  compresslevel: int = 3, **kwargs) -> tuple[None, None, bytes]:
+    """igzip Compression"""
+    return None, None, igzip.compress(arr, compresslevel=max(compresslevel, 3), **kwargs)
+
+
+def igzip_decompress(len_arr: None, pos_arr: None, elements: bytes, arr_configs: None,
+                    elem_type: np.dtype = np.uint8) -> np.ndarray:
+    """igzip Decompression"""
+    return np.frombuffer(igzip.decompress(elements), dtype=elem_type)
 
 
 def no_compress(arr: np.ndarray, len_type: None = None, pos_type: None = None, elem_type: np.dtype = np.uint8,
