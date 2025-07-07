@@ -206,5 +206,9 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# Helper scripts:
+# Helper scripts
 *.bat
+
+# For testing
+*.npy
+*.ipynb

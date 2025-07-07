@@ -24,6 +24,9 @@ setup(
     ],
     extras_require={
         "isal": ["isal"],
+        "numba": ["numba"],
+        "test": ["pytest", "gymnasium<1.2.0", "ale-py"],
+        "vizdoom": ["vizdoom"],
     },
     # PyPI package information.
     project_urls={
