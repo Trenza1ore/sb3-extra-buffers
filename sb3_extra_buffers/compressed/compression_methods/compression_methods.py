@@ -11,7 +11,7 @@ try:
 except ImportError:
     igzip = gzip
 
-CompressionMethods = namedtuple("CompressionMethod", ["compress", "decompress", "rle_like"])
+CompressionMethods = namedtuple("CompressionMethod", ["compress", "decompress"])
 
 
 def rle_compress(arr: np.ndarray, elem_type: np.dtype = np.uint8, runs_type: np.dtype = np.uint16) -> bytes:
@@ -85,9 +85,9 @@ except ImportError:
     rle_numba_decompress = rle_numpy_decompress
 
 COMPRESSION_METHOD_MAP: dict[str, CompressionMethods] = {
-    "rle": CompressionMethods(compress=rle_compress, decompress=rle_numpy_decompress, rle_like=False),
-    "rle-jit": CompressionMethods(compress=rle_compress, decompress=rle_numba_decompress, rle_like=False),
-    "gzip": CompressionMethods(compress=gzip_compress, decompress=gzip_decompress, rle_like=False),
-    "igzip": CompressionMethods(compress=igzip_compress, decompress=igzip_decompress, rle_like=False),
-    "none": CompressionMethods(compress=no_compress, decompress=no_decompress, rle_like=False),
+    "rle": CompressionMethods(compress=rle_compress, decompress=rle_numpy_decompress),
+    "rle-jit": CompressionMethods(compress=rle_compress, decompress=rle_numba_decompress),
+    "gzip": CompressionMethods(compress=gzip_compress, decompress=gzip_decompress),
+    "igzip": CompressionMethods(compress=igzip_compress, decompress=igzip_decompress),
+    "none": CompressionMethods(compress=no_compress, decompress=no_decompress),
 }
