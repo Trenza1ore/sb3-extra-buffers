@@ -1,6 +1,6 @@
 # sb3-extra-buffers
 Unofficial implementation of extra Stable-Baselines3 buffer classes. Mostly a proof-of-concept in current state.
-
+## WIP, still very messy
 ---
 #### Compressed Buffers
 Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so let's try to tackle it by not storing raw frame buffers in full `np.float32` directly and find something smaller instead. For any input data that are sparse and containing large contiguous region of repeating values, lossless compression techniques can be applied to reduce memory footprint.
