@@ -54,7 +54,6 @@ def test_compressed_rollout_buffer(env_id, compression_method: str, n_envs: int,
     env = VecFrameStack(env, n_stack=n_stack)
 
     cnn_cls = CustomCNN
-    cnn_cls.batch_size = BATCH_SIZE
     policy_kwargs = {
         "normalize_images": False,
         "features_extractor_class": cnn_cls,
