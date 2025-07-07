@@ -1,5 +1,6 @@
 # sb3-extra-buffers
-Unofficial implementation of extra Stable-Baselines3 buffer classes, mostly a proof-of-concept in current state.
+Unofficial implementation of extra Stable-Baselines3 buffer classes, still a proof-of-concept in the current state.
+
 **Main Goal:**
 Reduce the memory consumption of memory buffers in Reinforcement Learning.
 
@@ -46,7 +47,7 @@ Defined in `sb3_extra_buffers.compressed`
 - `igzip` Compression via `isal.igzip`, uses `python-isal` library.
 - `none` No compression other than casting to `elem_type`.
 
-**JIT Before Multi-Processing**:
+**JIT Before Multi-Processing:**
 When using `rle-jit`, remember to trigger JIT compilation before any multi-processing code is executed.
 ```python
 # Code for other stuffs...
@@ -92,4 +93,5 @@ env.close()
 ---
 ## Recording Buffers
 Defined in `sb3_extra_buffers.recording`
-Mainly used in combination with [SegDoom](https://github.com/Trenza1ore/SegDoom) to record stuffs.
+Mainly used in combination with [SegDoom](https://github.com/Trenza1ore/SegDoom) to record stuff.
+#### WIP
