@@ -25,8 +25,9 @@ setup(
     extras_require={
         "isal": ["isal"],
         "numba": ["numba"],
-        "test": ["pytest", "gymnasium<1.2.0", "ale-py"],
-        "vizdoom": ["vizdoom"],
+        "fast": ["sb3_extra_buffers[isal,numba]"],
+        "atari": ["gymnasium<1.2.0", "ale-py"],
+        "vizdoom": ["gymnasium<1.2.0", "vizdoom"],
     },
     # PyPI package information.
     project_urls={
