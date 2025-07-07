@@ -29,7 +29,7 @@ pip install "sb3_extra_buffers[vizdoom]" # installs gymnasium, vizdoom
 sb3_extra_buffers
     |- compressed
     |    |- CompressedRolloutBuffer: RolloutBuffer with compression
-    |    |- CompressedReplayBuffer: ReplayBuffer with compression
+    |    |- CompressedReplayBuffer: (WIP) ReplayBuffer with compression
     |
     |- recording
          |- RecordBuffer: A buffer for recording game states
