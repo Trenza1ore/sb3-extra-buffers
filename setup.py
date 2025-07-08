@@ -26,7 +26,7 @@ setup(
         "isal": ["isal"],
         "numba": ["numba"],
         "fast": ["sb3_extra_buffers[isal,numba]"],
-        "atari": ["gymnasium<1.2.0", "ale-py"],
+        "atari": ["gymnasium<1.2.0", "ale-py", "opencv-python"],
         "vizdoom": ["gymnasium<1.2.0", "vizdoom"],
     },
     # PyPI package information.
