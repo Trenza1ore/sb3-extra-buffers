@@ -78,6 +78,10 @@ def no_decompress(data: bytes, *args, elem_type: np.dtype, **kwargs) -> np.ndarr
     return np.frombuffer(data, dtype=elem_type)
 
 
+def has_numba() -> bool:
+    return HAS_NUMBA
+
+
 try:
     from sb3_extra_buffers.compressed.compression_methods.compression_methods_numba import rle_numba_decompress
     HAS_NUMBA = True

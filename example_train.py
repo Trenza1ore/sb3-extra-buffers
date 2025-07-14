@@ -3,25 +3,28 @@ import ale_py
 import numpy as np
 import gymnasium as gym
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import SubprocVecEnv, VecFrameStack, VecTransposeImage
-from sb3_extra_buffers.compressed import CompressedRolloutBuffer, HAS_NUMBA, find_smallest_dtype
-from stable_baselines3.common.atari_wrappers import AtariWrapper
-from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.env_util import make_atari_env
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecFrameStack, VecTransposeImage, VecEnv
+from sb3_extra_buffers.compressed import CompressedRolloutBuffer, has_numba, find_smallest_dtype
 
+NUM_ENVS_TRAIN = 8
+NUM_ENVS_EVAL = 8
+FRAMESTACK = 4
+TRAINING_STEPS = 10_000_000
 COMPRESSION_METHOD = "rle-jit"
-TRAIN_NENV = 8
-EVAL_NENV = 8
 ENV_TO_TEST = "ALE/Pong-v5"
+FINAL_MODEL_PATH = "./ppo_pong.zip"
 
 
-def make_env(env_id: str = ENV_TO_TEST, **kwargs):
+def make_env(env_id: str = ENV_TO_TEST, n_envs: int = NUM_ENVS_TRAIN, framestack: int = FRAMESTACK,
+             vec_env_cls: VecEnv = SubprocVecEnv, **kwargs):
     if env_id.startswith("ALE/"):
         gym.register_envs(ale_py)
-    env = gym.make(env_id, **kwargs)
-    env = Monitor(env)
-    env = AtariWrapper(env)
-    return env
+    env = make_atari_env(env_id=env_id, n_envs=n_envs, env_kwargs=kwargs, vec_env_cls=vec_env_cls)
+    if framestack > 1:
+        env = VecFrameStack(env, n_stack=framestack)
+    return VecTransposeImage(env)
 
 
 if __name__ == "__main__":
@@ -29,17 +32,15 @@ if __name__ == "__main__":
     buffer_dtypes = dict(elem_type=np.uint8, runs_type=find_smallest_dtype(flatten_obs_shape))
 
     # Pre-JIT Numba to avoid fork issues
-    if HAS_NUMBA and "jit" in COMPRESSION_METHOD:
+    if has_numba() and "jit" in COMPRESSION_METHOD:
         from sb3_extra_buffers.compressed.compression_methods.compression_methods_numba import init_jit
         init_jit(**buffer_dtypes)
 
-    env = SubprocVecEnv([make_env for _ in range(TRAIN_NENV)])
-    env = VecFrameStack(env, n_stack=4)
-    env = VecTransposeImage(env)
-
-    eval_env = SubprocVecEnv([make_env for _ in range(EVAL_NENV)])
-    eval_env = VecFrameStack(eval_env, n_stack=4)
-    eval_env = VecTransposeImage(eval_env)
+    env = make_env(env_id=ENV_TO_TEST, n_envs=NUM_ENVS_TRAIN, framestack=FRAMESTACK)
+    if NUM_ENVS_EVAL > 0:
+        eval_env = make_env(env_id=ENV_TO_TEST, n_envs=NUM_ENVS_EVAL, framestack=FRAMESTACK)
+    else:
+        eval_env = env
 
     # Create PPO model using CompressedRolloutBuffer
     model = PPO(
@@ -75,10 +76,10 @@ if __name__ == "__main__":
     )
 
     # Training
-    model.learn(total_timesteps=10_000_000, callback=eval_callback, progress_bar=True)
+    model.learn(total_timesteps=TRAINING_STEPS, callback=eval_callback, progress_bar=True)
 
     # Save the final model
-    model.save("ppo_pong.zip")
+    model.save(FINAL_MODEL_PATH)
 
     # Cleanup
     env.close()
