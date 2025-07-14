@@ -33,8 +33,7 @@ class CompressedRolloutBuffer(RolloutBuffer):
         normalize_images: bool = False,
         compression_method: str = "rle",
         compression_kwargs: Optional[dict] = None,
-        decompression_kwargs: Optional[dict] = None,
-        **kwargs
+        decompression_kwargs: Optional[dict] = None
     ):
         # Avoid calling RolloutBuffer.reset which might be over-allocating memory for observations
         BaseBuffer.__init__(self, buffer_size, observation_space, action_space, device, n_envs=n_envs)
