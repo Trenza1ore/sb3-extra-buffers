@@ -181,6 +181,8 @@ class CompressedReplayBuffer(ReplayBuffer):
     def _get_samples(self, batch_inds: np.ndarray, env: Optional[VecNormalize] = None) -> ReplayBufferSamples:
         # Sample randomly the env idx
         env_indices = np.random.randint(0, high=self.n_envs, size=(len(batch_inds),))
+        self.reconstruct_obs.cache_clear()
+        self.reconstruct_nextobs.cache_clear()
 
         with warnings.catch_warnings():
             warnings.filterwarnings(action="ignore", message="The given NumPy array is not writable.*",
