@@ -212,3 +212,6 @@ __marimo__/
 # For testing
 *.npy
 *.ipynb
+*.zip
+*.npz
+test*.*py*

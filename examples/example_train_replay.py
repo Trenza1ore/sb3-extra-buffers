@@ -3,9 +3,10 @@ import numpy as np
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import EvalCallback
 from sb3_extra_buffers.compressed import CompressedReplayBuffer, has_numba, find_smallest_dtype
-from example_train_rollout import make_env
+from examples.make_atari_env import make_env
 
 MODEL_TYPE = "dqn"
+FRAMESTACK = 4
 NUM_ENVS_TRAIN = 1
 NUM_ENVS_EVAL = 8
 BUFFER_SIZE = 100_000
@@ -14,12 +15,13 @@ EXPLORATION_STEPS = 1_000_000
 LEARNING_STARTS = 100_000
 COMPRESSION_METHOD = "rle-jit"
 ENV_TO_TEST = "MsPacmanNoFrameskip-v4"
-FINAL_MODEL_PATH = f"./{MODEL_TYPE}_{ENV_TO_TEST.removesuffix('NoFrameskip-v4').casefold()}.zip"
+FINAL_MODEL_PATH = f"./{MODEL_TYPE}_{ENV_TO_TEST.removesuffix('NoFrameskip-v4')}_{FRAMESTACK}.zip"
+BEST_MODEL_DIR = f"./logs/{ENV_TO_TEST}/{MODEL_TYPE}/best_model"
 SEED = 1809550766
 
 
 if __name__ == "__main__":
-    flatten_obs_shape = np.prod(make_env(env_id=ENV_TO_TEST, n_envs=1).observation_space.shape)
+    flatten_obs_shape = np.prod(make_env(env_id=ENV_TO_TEST, n_envs=1, framestack=FRAMESTACK).observation_space.shape)
     buffer_dtypes = dict(elem_type=np.uint8, runs_type=find_smallest_dtype(flatten_obs_shape))
 
     # Pre-JIT Numba to avoid fork issues
@@ -27,13 +29,13 @@ if __name__ == "__main__":
         from sb3_extra_buffers.compressed.compression_methods.compression_methods_numba import init_jit
         init_jit(**buffer_dtypes)
 
-    env = make_env(env_id=ENV_TO_TEST, n_envs=NUM_ENVS_TRAIN, seed=SEED)
+    env = make_env(env_id=ENV_TO_TEST, n_envs=NUM_ENVS_TRAIN, framestack=FRAMESTACK, seed=SEED)
     if NUM_ENVS_EVAL > 0:
-        eval_env = make_env(env_id=ENV_TO_TEST, n_envs=NUM_ENVS_EVAL, seed=SEED)
+        eval_env = make_env(env_id=ENV_TO_TEST, n_envs=NUM_ENVS_EVAL, framestack=FRAMESTACK, seed=SEED)
     else:
         eval_env = env
 
-    # Create PPO model using CompressedRolloutBuffer
+    # Create DQN model using CompressedRolloutBuffer
     model = DQN(
         "CnnPolicy",
         env,
@@ -48,8 +50,7 @@ if __name__ == "__main__":
         exploration_final_eps=0.01,
         learning_rate=1e-4,
         replay_buffer_class=CompressedReplayBuffer,
-        replay_buffer_kwargs=dict(dtypes=buffer_dtypes, compression_method=COMPRESSION_METHOD, normalize_images=False),
-        policy_kwargs=dict(normalize_images=False),
+        replay_buffer_kwargs=dict(dtypes=buffer_dtypes, compression_method=COMPRESSION_METHOD),
         device="mps" if torch.mps.is_available() else "auto",
         seed=SEED,
     )
@@ -59,7 +60,7 @@ if __name__ == "__main__":
     # Evaluation callback (optional)
     eval_callback = EvalCallback(
         eval_env,
-        best_model_save_path=f"./logs/{ENV_TO_TEST}/{MODEL_TYPE}/best_model",
+        best_model_save_path=BEST_MODEL_DIR,
         log_path=f"./logs/{ENV_TO_TEST}/{MODEL_TYPE}/eval",
         n_eval_episodes=20,
         eval_freq=8192,

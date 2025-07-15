@@ -2,18 +2,20 @@ try:
     from tqdm.rich import tqdm
 except ImportError:
     from tqdm import tqdm
-from stable_baselines3 import DQN
-from stable_baselines3.common.vec_env import DummyVecEnv
-from example_train_replay import make_env, FINAL_MODEL_PATH
+import torch as th
+from stable_baselines3 import PPO
+from examples.make_atari_env import make_env
+from examples.example_train_rollout import BEST_MODEL_DIR, ENV_TO_TEST, FRAMESTACK
 
 NUM_GAMES_TO_WATCH = 10
 PAUSE_BETWEEN_GAMES = False
-RENDER_GAMES = False
+RENDER_GAMES = True
 
 if __name__ == "__main__":
-    model = DQN.load(FINAL_MODEL_PATH)
+    device = "mps" if th.mps.is_available() else "auto"
+    model = PPO.load(BEST_MODEL_DIR + "/best_model.zip", device=device)
     render_mode = "human" if RENDER_GAMES else "rgb_array"
-    vec_env = make_env(n_envs=1, vec_env_cls=DummyVecEnv, render_mode=render_mode)
+    vec_env = make_env(env_id=ENV_TO_TEST, n_envs=1, framestack=FRAMESTACK, render_mode=render_mode)
     obs = vec_env.reset()
 
     # Play the games
