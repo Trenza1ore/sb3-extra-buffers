@@ -26,8 +26,10 @@ setup(
         "isal": ["isal"],
         "numba": ["numba"],
         "fast": ["sb3_extra_buffers[isal,numba]"],
-        "atari": ["gymnasium<1.2.0", "ale-py", "opencv-python"],
-        "vizdoom": ["gymnasium<1.2.0", "vizdoom"],
+        "tqdm": ["tqdm", "rich"],
+        "gym": ["gymnasium<1.2.0", "sb3_extra_buffers[tqdm]"],
+        "atari": ["sb3_extra_buffers[gym]", "ale-py", "opencv-python"],
+        "vizdoom": ["sb3_extra_buffers[gym]", "vizdoom"],
     },
     # PyPI package information.
     project_urls={
