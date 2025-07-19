@@ -1,6 +1,7 @@
+[![PyPI version](https://badge.fury.io/py/sb3-extra-buffers.svg)](https://badge.fury.io/py/sb3-extra-buffers) [![PyPI Downloads](https://static.pepy.tech/badge/sb3-extra-buffers)](https://pepy.tech/projects/sb3-extra-buffers)
+
 # sb3-extra-buffers
 Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to reduce memory usage drastically with minimal overhead.
-> Current Version: 0.2.2
 
 **Links:**
 - [This Project on PyPI](https://pypi.org/project/sb3-extra-buffers/)
