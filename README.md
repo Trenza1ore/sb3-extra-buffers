@@ -1,6 +1,12 @@
 # sb3-extra-buffers
 Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to reduce memory usage drastically with minimal overhead.
-> Current Version: 0.2.0
+> Current Version: 0.2.1
+
+**Links:**
+- [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3)
+- [SB3 Contrib (experimental features for SB3)](https://github.com/Stable-Baselines-Team/stable-baselines3-contrib)
+- [SBX (SB3 + JAX, uses SB3 buffers so can also benefit from compressed buffers here)](https://github.com/araffin/sbx)
+- [RL Baselines3 Zoo (training framework for SB3)](https://github.com/DLR-RM/rl-baselines3-zoo)
 
 **Main Goal:**
 Reduce the memory consumption of memory buffers in Reinforcement Learning while adding minimal overhead.
@@ -44,17 +50,18 @@ Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so le
 
 
 ## Installation
-To install with `isal` and `numba` support:
+Install via PyPI:
 ```bash
-pip install "sb3_extra_buffers[fast]"
+pip install "sb3-extra-buffers[fast,extra]"
 ```
 Other install options:
 ```bash
-pip install sb3_extra_buffers            # only installs minimum requirements
-pip install "sb3_extra_buffers[isal]"    # only installs python-isal
-pip install "sb3_extra_buffers[numba]"   # only installs numba
-pip install "sb3_extra_buffers[atari]"   # installs gymnasium, ale-py
-pip install "sb3_extra_buffers[vizdoom]" # installs gymnasium, vizdoom
+pip install sb3-extra-buffers            # only installs minimum requirements
+pip install "sb3-extra-buffers[extra]"   # installs extra dependencies for SB3
+pip install "sb3-extra-buffers[fast]"    # installs python-isal and numba
+pip install "sb3-extra-buffers[isal]"    # only installs python-isal
+pip install "sb3-extra-buffers[numba]"   # only installs numba
+pip install "sb3-extra-buffers[vizdoom]" # installs vizdoom
 ```
 ## Current Project Structure
 ```
