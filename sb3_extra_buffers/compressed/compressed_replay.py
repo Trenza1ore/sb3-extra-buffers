@@ -182,38 +182,40 @@ class CompressedReplayBuffer(ReplayBuffer):
         # Sample randomly the env idx
         env_indices = np.random.randint(0, high=self.n_envs, size=(len(batch_inds),))
         self.reconstruct_obs.cache_clear()
-        self.reconstruct_nextobs.cache_clear()
+        obs = np.stack([self.reconstruct_obs(idx, env_idx) for idx, env_idx in zip(batch_inds, env_indices)])
+        if self.optimize_memory_usage:
+            batch_inds_offset = (batch_inds + 1) % self.buffer_size
+            n_obs = np.stack([self.reconstruct_obs(idx, env_idx) for idx, env_idx in zip(
+                batch_inds_offset, env_indices)])
+        else:
+            self.reconstruct_nextobs.cache_clear()
+            n_obs = np.stack([self.reconstruct_nextobs(idx, env_idx) for idx, env_idx in zip(
+                batch_inds, env_indices)])
 
         with warnings.catch_warnings():
             warnings.filterwarnings(action="ignore", message="The given NumPy array is not writable.*",
                                     category=UserWarning)
-            obs = th.stack([self.reconstruct_obs(idx, env_idx) for idx, env_idx in zip(batch_inds, env_indices)])
-            if self.optimize_memory_usage:
-                batch_inds_offset = (batch_inds + 1) % self.buffer_size
-                next_obs = th.stack([self.reconstruct_obs(idx, env_idx) for idx, env_idx in zip(
-                    batch_inds_offset, env_indices)])
-            else:
-                next_obs = th.stack([self.reconstruct_nextobs(idx, env_idx) for idx, env_idx in zip(
-                    batch_inds, env_indices)])
+            obs = th.from_numpy(self._normalize_obs(obs, env)).to(device=self.device, dtype=th.float32, copy=True)
+            n_obs = th.from_numpy(self._normalize_obs(n_obs, env)).to(device=self.device, dtype=th.float32, copy=True)
 
         if self.normalize_images:
             obs /= 255.0
-            next_obs /= 255.0
+            n_obs /= 255.0
 
         actions = self.actions[batch_inds, env_indices, :]
         dones = (self.dones[batch_inds, env_indices] * (1 - self.timeouts[batch_inds, env_indices])).reshape(-1, 1)
         rewards = self._normalize_reward(self.rewards[batch_inds, env_indices].reshape(-1, 1), env)
 
-        return ReplayBufferSamples(obs, self.to_torch(actions), next_obs, self.to_torch(dones), self.to_torch(rewards))
+        return ReplayBufferSamples(obs, self.to_torch(actions), n_obs, self.to_torch(dones), self.to_torch(rewards))
 
     @lru_cache(maxsize=1024)
     def reconstruct_obs(self, idx: int, env_idx: int):
         obs = self.decompress(self.observations[idx, env_idx], arr_configs=self.flatten_config,
                               **self.decompression_kwargs).reshape(self.obs_shape)
-        return th.from_numpy(obs).to(self.device, th.float32)
+        return obs
 
     @lru_cache(maxsize=1024)
     def reconstruct_nextobs(self, idx: int, env_idx: int):
         obs = self.decompress(self.next_observations[idx, env_idx], arr_configs=self.flatten_config,
                               **self.decompression_kwargs).reshape(self.obs_shape)
-        return th.from_numpy(obs).to(self.device, th.float32)
+        return obs
