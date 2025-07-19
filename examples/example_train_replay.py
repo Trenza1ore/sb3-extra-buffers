@@ -3,7 +3,7 @@ import numpy as np
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import EvalCallback
 from sb3_extra_buffers.compressed import CompressedReplayBuffer, has_numba, find_smallest_dtype
-from examples.make_atari_env import make_env
+from sb3_extra_buffers.training_utils.atari import make_env
 
 MODEL_TYPE = "dqn"
 FRAMESTACK = 4

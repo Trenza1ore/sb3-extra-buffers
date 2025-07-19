@@ -4,7 +4,7 @@ import numpy as np
 import torch as th
 from stable_baselines3 import PPO
 from sb3_extra_buffers.training_utils.eval_model import eval_model
-from examples.make_atari_env import make_env
+from sb3_extra_buffers.training_utils.atari import make_env
 from examples.example_train_rollout import BEST_MODEL_DIR, FINAL_MODEL_PATH, ENV_TO_TEST, FRAMESTACK
 
 N_EVAL_EPISODES = 10_000

@@ -4,7 +4,7 @@ except ImportError:
     from tqdm import tqdm
 import torch as th
 from stable_baselines3 import PPO
-from examples.make_atari_env import make_env
+from sb3_extra_buffers.training_utils.atari import make_env
 from examples.example_train_rollout import BEST_MODEL_DIR, ENV_TO_TEST, FRAMESTACK
 
 NUM_GAMES_TO_WATCH = 10

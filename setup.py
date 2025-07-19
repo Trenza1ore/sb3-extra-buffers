@@ -13,7 +13,7 @@ setup(
     author="Hugo (Jin Huang)",
     author_email="SushiNinja123@outlook.com",
     url="https://github.com/Trenza1ore/sb3-extra-buffers",
-    description="Extra buffer classes for Stable-Baselines3",
+    description="Extra buffer classes for Stable-Baselines3, reduce memory usage with minimal overhead.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="MIT",
@@ -21,13 +21,14 @@ setup(
     python_requires=">=3.9",
     install_requires=[
         "stable_baselines3",
+        "tqdm"
     ],
     extras_require={
         "isal": ["isal"],
         "numba": ["numba"],
         "fast": ["sb3_extra_buffers[isal,numba]"],
-        "tqdm": ["tqdm", "rich"],
-        "gym": ["gymnasium<1.2.0", "sb3_extra_buffers[tqdm]"],
+        "rich": ["rich"],
+        "gym": ["gymnasium<1.2.0", "sb3_extra_buffers[rich]"],
         "atari": ["sb3_extra_buffers[gym]", "ale-py", "opencv-python"],
         "vizdoom": ["sb3_extra_buffers[gym]", "vizdoom"],
     },
