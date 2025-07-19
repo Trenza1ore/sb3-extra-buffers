@@ -24,6 +24,6 @@ def warm_up(buffer: ReplayBuffer, n_envs: int, warmup_env: VecEnv, warmup_model:
         f"warmup_n_envs value ({warmup_n_envs}) incompatible with n_envs ({n_envs})"
 
     mean_reward = eval_model(n_eps=warmup_episodes, eval_env=warmup_env, eval_model=warmup_model,
-                              eval_n_envs=warmup_n_envs, buffer_n_envs=n_envs, buffer=buffer)
+                             eval_n_envs=warmup_n_envs, buffer_n_envs=n_envs, buffer=buffer)
 
     return mean_reward

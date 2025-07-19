@@ -2,7 +2,7 @@ import numpy as np
 from numba import njit
 
 
-@njit(cache=True)
+@njit
 def _rle_numba_decompress(elements: np.ndarray, runs: np.ndarray, out: np.ndarray) -> np.ndarray:
     """RLE Decompression with Numba JIT"""
     idx = 0
