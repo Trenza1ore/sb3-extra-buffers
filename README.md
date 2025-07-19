@@ -3,6 +3,7 @@ Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to red
 > Current Version: 0.2.1
 
 **Links:**
+- [This Project on PyPI](https://pypi.org/project/sb3-extra-buffers/)
 - [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3)
 - [SB3 Contrib (experimental features for SB3)](https://github.com/Stable-Baselines-Team/stable-baselines3-contrib)
 - [SBX (SB3 + JAX, uses SB3 buffers so can also benefit from compressed buffers here)](https://github.com/araffin/sbx)
@@ -56,7 +57,7 @@ pip install "sb3-extra-buffers[fast,extra]"
 ```
 Other install options:
 ```bash
-pip install sb3-extra-buffers            # only installs minimum requirements
+pip install "sb3-extra-buffers"            # only installs minimum requirements
 pip install "sb3-extra-buffers[extra]"   # installs extra dependencies for SB3
 pip install "sb3-extra-buffers[fast]"    # installs python-isal and numba
 pip install "sb3-extra-buffers[isal]"    # only installs python-isal
