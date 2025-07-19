@@ -3,7 +3,7 @@ import platform
 import numpy as np
 import torch as th
 from stable_baselines3 import DQN
-from sb3_extra_buffers.training_utils.eval_model import eval_models
+from sb3_extra_buffers.training_utils.eval_model import eval_model
 from examples.make_atari_env import make_env
 from examples.example_train_replay import BEST_MODEL_DIR, FINAL_MODEL_PATH, ENV_TO_TEST, FRAMESTACK
 
@@ -20,7 +20,7 @@ if __name__ == "__main__":
         os.system("cls" if platform.system() == "Windows" else "clear")
     for model_path in [BEST_MODEL_DIR + "/best_model.zip", FINAL_MODEL_PATH]:
         model = DQN.load(model_path, device=device)
-        eval_rewards = eval_models(N_EVAL_EPISODES, vec_env, model, close_env=False)
+        eval_rewards = eval_model(N_EVAL_EPISODES, vec_env, model, close_env=False)
         Q1, Q2, Q3 = (round(np.percentile(eval_rewards, x)) for x in [25, 50, 75])
         reward_avg, reward_std = np.mean(eval_rewards), np.std(eval_rewards)
         reward_min, reward_max = round(np.min(eval_rewards)), round(np.max(eval_rewards))
