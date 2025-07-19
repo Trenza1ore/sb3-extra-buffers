@@ -3,7 +3,6 @@ from typing import Union, Optional, Any
 import re
 import warnings
 from functools import partial, lru_cache
-from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import torch as th
 from gymnasium import spaces
@@ -55,15 +54,16 @@ class CompressedReplayBuffer(ReplayBuffer):
             self.dtypes = dict(elem_type=elem_type, runs_type=elem_type)
 
         # Compress and decompress
-        compression_kwargs = compression_kwargs or self.dtypes
+        self.compression_kwargs = compression_kwargs or self.dtypes
         self.decompression_kwargs = decompression_kwargs or self.dtypes
         if compression_method[-1].isdigit():
             re_match = re.search(r"(\w+?)([0-9]+)", compression_method)
             assert re_match, f"Invalid compression shorthand: {compression_method}"
             compression_method = re_match.group(1)
             compression_kwargs["compresslevel"] = int(re_match.group(2))
-        self.compress = partial(COMPRESSION_METHOD_MAP[compression_method].compress, **compression_kwargs)
-        self.decompress = COMPRESSION_METHOD_MAP[compression_method].decompress
+        self.compress = partial(COMPRESSION_METHOD_MAP[compression_method].compress, **self.compression_kwargs)
+        self.decompress = partial(COMPRESSION_METHOD_MAP[compression_method].decompress,
+                                  arr_configs=self.flatten_config, **self.decompression_kwargs)
 
         # Adjust buffer size
         self.buffer_size = max(buffer_size // n_envs, 1)
@@ -210,12 +210,8 @@ class CompressedReplayBuffer(ReplayBuffer):
 
     @lru_cache(maxsize=1024)
     def reconstruct_obs(self, idx: int, env_idx: int):
-        obs = self.decompress(self.observations[idx, env_idx], arr_configs=self.flatten_config,
-                              **self.decompression_kwargs).reshape(self.obs_shape)
-        return obs
+        return self.decompress(self.observations[idx, env_idx]).reshape(self.obs_shape)
 
     @lru_cache(maxsize=1024)
     def reconstruct_nextobs(self, idx: int, env_idx: int):
-        obs = self.decompress(self.next_observations[idx, env_idx], arr_configs=self.flatten_config,
-                              **self.decompression_kwargs).reshape(self.obs_shape)
-        return obs
+        return self.decompress(self.next_observations[idx, env_idx]).reshape(self.obs_shape)

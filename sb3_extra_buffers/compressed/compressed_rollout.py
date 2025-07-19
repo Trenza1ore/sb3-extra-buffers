@@ -51,15 +51,17 @@ class CompressedRolloutBuffer(RolloutBuffer):
             self.dtypes = dict(elem_type=elem_type, runs_type=elem_type)
 
         # Compress and decompress
-        compression_kwargs = compression_kwargs or self.dtypes
+        self.compression_kwargs = compression_kwargs or self.dtypes
         self.decompression_kwargs = decompression_kwargs or self.dtypes
         if compression_method[-1].isdigit():
             re_match = re.search(r"(\w+?)([0-9]+)", compression_method)
             assert re_match, f"Invalid compression shorthand: {compression_method}"
             compression_method = re_match.group(1)
             compression_kwargs["compresslevel"] = int(re_match.group(2))
-        self.compress = partial(COMPRESSION_METHOD_MAP[compression_method].compress, **compression_kwargs)
-        self.decompress = COMPRESSION_METHOD_MAP[compression_method].decompress
+        self.compress = partial(COMPRESSION_METHOD_MAP[compression_method].compress, **self.compression_kwargs)
+        self.decompress = partial(COMPRESSION_METHOD_MAP[compression_method].decompress,
+                                  arr_configs=self.flatten_config, **self.decompression_kwargs)
+
         self.reset()
 
     def reset(self) -> None:
@@ -176,6 +178,5 @@ class CompressedRolloutBuffer(RolloutBuffer):
         return RolloutBufferSamples(obs, *tuple(map(self.to_torch, data)))
 
     def reconstruct_obs(self, idx: int):
-        obs = self.decompress(self.observations[idx, 0], arr_configs=self.flatten_config,
-                              **self.decompression_kwargs).reshape(self.obs_shape)
+        obs = self.decompress(self.observations[idx, 0]).reshape(self.obs_shape)
         return th.from_numpy(obs).to(self.device, th.float32)
