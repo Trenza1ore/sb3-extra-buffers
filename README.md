@@ -1,6 +1,6 @@
 # sb3-extra-buffers
 Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to reduce memory usage drastically with minimal overhead.
-> Current Version: 0.2.1
+> Current Version: 0.2.2
 
 **Links:**
 - [This Project on PyPI](https://pypi.org/project/sb3-extra-buffers/)
