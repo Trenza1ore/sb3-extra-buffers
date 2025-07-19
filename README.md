@@ -134,19 +134,21 @@ if __name__ == "__main__":
     flatten_obs_shape = np.prod(make_env(env_id=ATARI_GAME, n_envs=1, framestack=4).observation_space.shape)
     buffer_dtypes = dict(elem_type=np.uint8, runs_type=find_smallest_dtype(flatten_obs_shape))
 
+    # Make vec envs
     env = make_env(env_id=ATARI_GAME, n_envs=4, framestack=4)
-    eval_env = make_env(env_id=ATARI_GAME, n_envs=1, framestack=4)
+    eval_env = make_env(env_id=ATARI_GAME, n_envs=10, framestack=4)
 
     # Create PPO model using CompressedRolloutBuffer
-    model = PPO("CnnPolicy", env, verbose=1, rollout_buffer_class=CompressedRolloutBuffer,
-                rollout_buffer_kwargs=dict(dtypes=buffer_dtypes, compression_method="rle"))
+    model = PPO("CnnPolicy", env, verbose=1, n_steps=128, batch_size=256, n_epochs=4,
+                rollout_buffer_class=CompressedRolloutBuffer,
+                rollout_buffer_kwargs=dict(dtypes=buffer_dtypes, compression_method="rle"), device="mps")
 
     # Evaluation callback (optional)
-    eval_callback = EvalCallback(eval_env, log_path=f"./logs/{ATARI_GAME}",
+    eval_callback = EvalCallback(eval_env, n_eval_episodes=10, eval_freq=8192, log_path=f"./logs/{ATARI_GAME}",
                                  best_model_save_path=f"./logs/{ATARI_GAME}/best_model")
 
     # Training
-    model.learn(total_timesteps=100_000, callback=eval_callback, progress_bar=True)
+    model.learn(total_timesteps=1_000_000, callback=eval_callback, progress_bar=True)
 
     # Save the final model
     model.save(f"ppo-{ATARI_GAME}.zip")
