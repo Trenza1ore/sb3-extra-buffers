@@ -85,13 +85,17 @@ sb3_extra_buffers
 #### Evaluation results for example training scripts:
 **PPO on `PongNoFrameskip-v4`, trained for 10M steps using `rle-jit`, framestack: `None`**
 ```
-Evaluated 10000 episodes, mean reward: 21.0 +/- 0.00
+(Best ) Evaluated 10000 episodes, mean reward: 21.0 +/- 0.00
 Q1:   21 | Q2:   21 | Q3:   21 | Relative IQR: 0.00 | Min: 21 | Max: 21
+(Final) Evaluated 10000 episodes, mean reward: 21.0 +/- 0.02
+Q1:   21 | Q2:   21 | Q3:   21 | Relative IQR: 0.00 | Min: 20 | Max: 21
 ```
 **DQN on `MsPacmanNoFrameskip-v4`, trained for 10M steps using `rle-jit`, framestack: `4`**
 ```
-Evaluated 10000 episodes, mean reward: 3300.0 +/- 770.79
+(Best ) Evaluated 10000 episodes, mean reward: 3300.0 +/- 770.79
 Q1: 2490 | Q2: 4020 | Q3: 4020 | Relative IQR: 0.38 | Min: 2460 | Max: 4020
+(Final) Evaluated 10000 episodes, mean reward: 3379.2 +/- 453.78
+Q1: 2690 | Q2: 3400 | Q3: 3880 | Relative IQR: 0.35 | Min: 1230 | Max: 4090
 ```
 ---
 ## Compressed Buffers
