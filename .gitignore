@@ -214,4 +214,5 @@ __marimo__/
 *.ipynb
 *.zip
 *.npz
+*.sh
 test*.*py*
