@@ -208,11 +208,14 @@ __marimo__/
 
 # Helper scripts
 *.bat
+*.sh
 
 # For testing
 *.npy
+*.npz
 *.ipynb
 *.zip
-*.npz
-*.sh
-test*.*py*
+test*.py
+
+# Pytest
+!tests/*.py
