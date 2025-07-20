@@ -15,7 +15,9 @@ Reduce the memory consumption of memory buffers in Reinforcement Learning while 
 **TO-DO List:**
 - [x] Compression Methods **(Essential)**
   - [x] rle (with `numpy`)
+    - [x] allergic-to-for-loops version (faster implementation)
   - [x] rle-jit (with `numba` jit compilation)
+    - [x] include initialization of `jit` in buffer dtype calculation
   - [x] gzip (with `gzip`)
   - [x] igzip (with `isal.igzip`)
 - [x] Compressed Buffers **(Essential)**
@@ -27,7 +29,7 @@ Reduce the memory consumption of memory buffers in Reinforcement Learning while 
     - [ ] DictReplayBuffer
     - [ ] NStepReplayBuffer
   - [ ] Buffers in [SB3-Contrib](https://github.com/Stable-Baselines-Team/stable-baselines3-contrib)
-- [x] Compressed Buffer pytest
+- [x] Compressed Buffer Tests (via `pytest`)
   - [x] Parallel testing (`pytest-xdist`) support
 - [x] Compressed Array (maybe can make porting easier)
   - [x] Essential `np.ndarray` operations
@@ -127,9 +129,12 @@ Q1: 2690 | Q2: 3400 | Q3: 3880 | Relative IQR: 0.35 | Min: 1230 | Max: 4090
 ```
 ---
 ## Pytest
-Make sure `pytest` and optionally `pytest-xdist` are already installed. Tests are compatible with `pytest-xdist` and would switch to using `DummyVecEnv` when `pytest-xdist` is enabled.
-```bash
+Make sure `pytest` and optionally `pytest-xdist` are already installed. Tests are compatible with `pytest-xdist` since `DummyVecEnv` is used for all tests.
+```
+# pytest
 pytest tests -v --durations=0 --tb=short
+# pytest-xdist
+pytest tests -n auto -v --durations=0 --tb=short
 ```
 ---
 ## Compressed Buffers
