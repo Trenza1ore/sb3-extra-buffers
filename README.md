@@ -1,10 +1,9 @@
-![PyPI - Version](https://img.shields.io/pypi/v/sb3-extra-buffers) ![Pepy Total Downloads](https://img.shields.io/pepy/dt/sb3-extra-buffers) ![PyPI - License](https://img.shields.io/pypi/l/sb3-extra-buffers) ![PyPI - Implementation](https://img.shields.io/pypi/implementation/sb3-extra-buffers?style=flat) 
+[![PyPI - Version](https://img.shields.io/pypi/v/sb3-extra-buffers)](https://pypi.org/project/sb3-extra-buffers/) [![Pepy Total Downloads](https://img.shields.io/pepy/dt/sb3-extra-buffers)](https://pepy.tech/projects/sb3-extra-buffers) ![PyPI - License](https://img.shields.io/pypi/l/sb3-extra-buffers) ![PyPI - Implementation](https://img.shields.io/pypi/implementation/sb3-extra-buffers?style=flat)
 
 # sb3-extra-buffers
 Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to reduce memory usage drastically with minimal overhead.
 
 **Links:**
-- [This Project on PyPI](https://pypi.org/project/sb3-extra-buffers/)
 - [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3)
 - [SB3 Contrib (experimental features for SB3)](https://github.com/Stable-Baselines-Team/stable-baselines3-contrib)
 - [SBX (SB3 + JAX, uses SB3 buffers so can also benefit from compressed buffers here)](https://github.com/araffin/sbx)
@@ -24,6 +23,9 @@ Reduce the memory consumption of memory buffers in Reinforcement Learning while 
   - [x] Compressed Replay Buffer
 - [ ] Compressed Buffers **(Extras)**
   - [ ] Other buffers in [SB3](https://github.com/DLR-RM/stable-baselines3)
+    - [ ] DictRolloutBuffer
+    - [ ] DictReplayBuffer
+    - [ ] NStepReplayBuffer
   - [ ] Buffers in [SB3-Contrib](https://github.com/Stable-Baselines-Team/stable-baselines3-contrib)
 - [x] Compressed Buffer pytest
   - [x] Parallel testing (`pytest-xdist`) support
@@ -52,8 +54,8 @@ Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so le
 **Applicable Input Types:**
 - `Semantic Segmentation` masks (1 color channel)
 - `Color Palette` game frames from retro video games
-- `Grayscale` game frames from retro video games
-- `RGB (Color)` game frames from retro video games
+- `Grayscale` observations
+- `RGB (Color)` observations
 - For noisy input with a lot of variation (mostly `RGB`), using `gzip1` or `igzip0` is recommended, run-length encoding won't work as great and can potentially even increase memory usage.
 
 **Implemented Compression Methods:**

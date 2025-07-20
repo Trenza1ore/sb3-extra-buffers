@@ -1,6 +1,7 @@
 from collections import namedtuple
 import gzip
 import numpy as np
+from sb3_extra_buffers.compressed.utils import find_smallest_dtype
 
 HAS_IGZIP: bool = False
 HAS_NUMBA: bool = False
@@ -29,7 +30,38 @@ def rle_compress(arr: np.ndarray, elem_type: np.dtype = np.uint8, runs_type: np.
 
 
 def rle_numpy_decompress(data: bytes, elem_type: np.dtype, runs_type: np.dtype, arr_configs: dict) -> np.ndarray:
-    """RLE Decompression"""
+    """RLE Decompression, NumPy vectorized"""
+    # Find how to split bytes
+    data_len = len(data)
+    runs_itemsize = int(np.dtype(runs_type).itemsize)
+    elem_itemsize = int(np.dtype(elem_type).itemsize)
+    run_count = data_len // (runs_itemsize + elem_itemsize)
+    runs_totalsize = run_count * runs_itemsize
+
+    # Find array length and suitable dtypes for intermediate calculations (we don't want floats!)
+    arr_length = arr_configs["shape"]
+    intermediate_dtype = find_smallest_dtype(arr_length, signed=False, fallback=np.int64)
+    padding = np.array([0], dtype=intermediate_dtype)
+
+    # Get elements, runs back from bytes, calculate start_pos for each run
+    runs = np.frombuffer(data[:runs_totalsize], dtype=runs_type)
+    elements = np.frombuffer(data[runs_totalsize:runs_totalsize + run_count * elem_itemsize], dtype=elem_type)
+    start_pos = np.cumsum(np.append(padding, runs), dtype=intermediate_dtype)[:-1]
+
+    # Indexing magics
+    run_indices = np.repeat(np.arange(run_count), runs)
+    cumulative_starts = np.concatenate([padding, np.cumsum(runs, axis=0, dtype=intermediate_dtype)[:-1]])
+    offsets = np.arange(arr_length, dtype=intermediate_dtype) - cumulative_starts[run_indices]
+    del cumulative_starts, run_indices
+    indices = np.repeat(start_pos, runs) + offsets
+
+    out = np.empty(**arr_configs)
+    out[indices] = np.repeat(elements, runs)
+    return out
+
+
+def rle_numpy_decompress_old(data: bytes, elem_type: np.dtype, runs_type: np.dtype, arr_configs: dict) -> np.ndarray:
+    """RLE Decompression, old version, less vectorized"""
     data_len = len(data)
     runs_itemsize = int(np.dtype(runs_type).itemsize)
     elem_itemsize = int(np.dtype(elem_type).itemsize)
@@ -95,6 +127,7 @@ except ImportError:
 COMPRESSION_METHOD_MAP: dict[str, CompressionMethods] = {
     "rle": CompressionMethods(compress=rle_compress, decompress=rle_numpy_decompress),
     "rle-jit": CompressionMethods(compress=rle_compress, decompress=rle_numba_decompress),
+    "rle-old": CompressionMethods(compress=rle_compress, decompress=rle_numpy_decompress_old),
     "gzip": CompressionMethods(compress=gzip_compress, decompress=gzip_decompress),
     "igzip": CompressionMethods(compress=igzip_compress, decompress=igzip_decompress),
     "none": CompressionMethods(compress=no_compress, decompress=no_decompress),
