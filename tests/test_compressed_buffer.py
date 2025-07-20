@@ -60,7 +60,7 @@ def compressed_buffer_test(env_id: str, compression_method: str, n_envs: int, n_
         buffer_class = CompressedRolloutBuffer
         uncompressed = RolloutBuffer
         model_class = PPO
-        extra_args = dict()
+        extra_args = dict(n_steps=256)
         expected_dtype = np.float32
         uncompressed_dtype = expected_dtype
     else:
