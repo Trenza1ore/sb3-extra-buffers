@@ -1,16 +1,15 @@
 from typing import Generator, Optional, Union
 
-import re
 import warnings
-from functools import partial
 import numpy as np
 import torch as th
 from gymnasium import spaces
 from stable_baselines3.common.buffers import BaseBuffer, RolloutBuffer, RolloutBufferSamples, VecNormalize
-from sb3_extra_buffers.compressed.compression_methods import COMPRESSION_METHOD_MAP
+from sb3_extra_buffers.compressed.base import BaseCompressedBuffer
 
 
-class CompressedRolloutBuffer(RolloutBuffer):
+class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
+    """ReplayBuffer, but compressed!"""
     observations: np.ndarray[object]
     actions: np.ndarray
     rewards: np.ndarray
@@ -53,15 +52,10 @@ class CompressedRolloutBuffer(RolloutBuffer):
         # Compress and decompress
         self.compression_kwargs = compression_kwargs or self.dtypes
         self.decompression_kwargs = decompression_kwargs or self.dtypes
-        if compression_method[-1].isdigit():
-            re_match = re.search(r"(\w+?)([0-9]+)", compression_method)
-            assert re_match, f"Invalid compression shorthand: {compression_method}"
-            compression_method = re_match.group(1)
-            compression_kwargs["compresslevel"] = int(re_match.group(2))
-        self.compress = partial(COMPRESSION_METHOD_MAP[compression_method].compress, **self.compression_kwargs)
-        self.decompress = partial(COMPRESSION_METHOD_MAP[compression_method].decompress,
-                                  arr_configs=self.flatten_config, **self.decompression_kwargs)
-
+        BaseCompressedBuffer.__init__(self, compression_method=compression_method,
+                                      compression_kwargs=self.compression_kwargs,
+                                      decompression_kwargs=self.decompression_kwargs,
+                                      flatten_config=self.flatten_config)
         self.reset()
 
     def reset(self) -> None:
@@ -119,7 +113,7 @@ class CompressedRolloutBuffer(RolloutBuffer):
             obs = np.clip(obs, elem_min, elem_max, dtype=elem_type, casting="unsafe")
 
         # Compress everything
-        self.observations[self.pos] = [self.compress(env_obs.ravel()) for env_obs in obs]
+        self.observations[self.pos] = [self._compress(env_obs.ravel()) for env_obs in obs]
 
         self.actions[self.pos] = np.array(action)
         self.rewards[self.pos] = np.array(reward)
@@ -178,5 +172,5 @@ class CompressedRolloutBuffer(RolloutBuffer):
         return RolloutBufferSamples(obs, *tuple(map(self.to_torch, data)))
 
     def reconstruct_obs(self, idx: int):
-        obs = self.decompress(self.observations[idx, 0]).reshape(self.obs_shape)
+        obs = self._decompress(self.observations[idx, 0]).reshape(self.obs_shape)
         return th.from_numpy(obs).to(self.device, th.float32)

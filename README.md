@@ -58,7 +58,7 @@ pip install "sb3-extra-buffers[fast,extra]"
 ```
 Other install options:
 ```bash
-pip install "sb3-extra-buffers"            # only installs minimum requirements
+pip install "sb3-extra-buffers"          # only installs minimum requirements
 pip install "sb3-extra-buffers[extra]"   # installs extra dependencies for SB3
 pip install "sb3-extra-buffers[fast]"    # installs python-isal and numba
 pip install "sb3-extra-buffers[isal]"    # only installs python-isal
@@ -92,6 +92,13 @@ Q1:   21 | Q2:   21 | Q3:   21 | Relative IQR: 0.00 | Min: 21 | Max: 21
 (Final) Evaluated 10000 episodes, mean reward: 21.0 +/- 0.02
 Q1:   21 | Q2:   21 | Q3:   21 | Relative IQR: 0.00 | Min: 20 | Max: 21
 ```
+**PPO on `MsPacmanNoFrameskip-v4`, trained for 10M steps using `rle-jit`, framestack: `4`**
+```
+(Best ) Evaluated 10000 episodes, mean reward: 
+
+(Final) Evaluated 10000 episodes, mean reward: 
+
+```
 **DQN on `MsPacmanNoFrameskip-v4`, trained for 10M steps using `rle-jit`, framestack: `4`**
 ```
 (Best ) Evaluated 10000 episodes, mean reward: 3300.0 +/- 770.79
@@ -104,7 +111,7 @@ Q1: 2690 | Q2: 3400 | Q3: 3880 | Relative IQR: 0.35 | Min: 1230 | Max: 4090
 Defined in `sb3_extra_buffers.compressed`
 
 **JIT Before Multi-Processing:**
-When using `rle-jit`, remember to trigger JIT compilation before any multi-processing code is executed.
+When using `rle-jit`, remember to trigger JIT compilation before any multi-processing code is executed via  `init_jit` or `find_buffer_dtypes`.
 ```python
 # Code for other stuffs...
 from sb3_extra_buffers.compressed.compression_methods import has_numba
@@ -124,40 +131,42 @@ env = SubprocVecEnv(...)
 
 **Example Usage:**
 ```python
-import numpy as np
 from stable_baselines3 import PPO
+from stable_baselines3.common.utils import get_linear_fn
 from stable_baselines3.common.callbacks import EvalCallback
-from sb3_extra_buffers.compressed import CompressedRolloutBuffer, find_smallest_dtype
+from sb3_extra_buffers.compressed import CompressedRolloutBuffer, find_buffer_dtypes
 from sb3_extra_buffers.training_utils.atari import make_env
 
 ATARI_GAME = "MsPacmanNoFrameskip-v4"
 
 if __name__ == "__main__":
-    flatten_obs_shape = np.prod(make_env(env_id=ATARI_GAME, n_envs=1, framestack=4).observation_space.shape)
-    buffer_dtypes = dict(elem_type=np.uint8, runs_type=find_smallest_dtype(flatten_obs_shape))
+    obs = make_env(env_id=ATARI_GAME, n_envs=1, framestack=4).observation_space
+    compression = "rle-jit"
+    buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype, compression_method=compression)
 
-    # Make vec envs
-    env = make_env(env_id=ATARI_GAME, n_envs=4, framestack=4)
+    env = make_env(env_id=ATARI_GAME, n_envs=8, framestack=4)
     eval_env = make_env(env_id=ATARI_GAME, n_envs=10, framestack=4)
 
     # Create PPO model using CompressedRolloutBuffer
-    model = PPO("CnnPolicy", env, verbose=1, n_steps=128, batch_size=256, n_epochs=4,
-                rollout_buffer_class=CompressedRolloutBuffer,
-                rollout_buffer_kwargs=dict(dtypes=buffer_dtypes, compression_method="rle"), device="mps")
+    model = PPO("CnnPolicy", env, verbose=1, learning_rate=get_linear_fn(2.5e-4, 0, 1), n_steps=128,
+                batch_size=256, clip_range=get_linear_fn(0.1, 0, 1), n_epochs=4, ent_coef=0.01, vf_coef=0.5,
+                seed=1970626835, device="mps", rollout_buffer_class=CompressedRolloutBuffer,
+                rollout_buffer_kwargs=dict(dtypes=buffer_dtypes, compression_method=compression))
 
     # Evaluation callback (optional)
-    eval_callback = EvalCallback(eval_env, n_eval_episodes=10, eval_freq=8192, log_path=f"./logs/{ATARI_GAME}",
-                                 best_model_save_path=f"./logs/{ATARI_GAME}/best_model")
+    eval_callback = EvalCallback(eval_env, n_eval_episodes=20, eval_freq=8192, log_path=f"./logs/{ATARI_GAME}/ppo/eval",
+                                 best_model_save_path=f"./logs/{ATARI_GAME}/ppo/best_model")
 
     # Training
-    model.learn(total_timesteps=1_000_000, callback=eval_callback, progress_bar=True)
+    model.learn(total_timesteps=10_000_000, callback=eval_callback, progress_bar=True)
 
     # Save the final model
-    model.save(f"ppo-{ATARI_GAME}.zip")
+    model.save("ppo_MsPacman_4.zip")
 
     # Cleanup
     env.close()
     eval_env.close()
+
 ```
 ---
 ## Recording Buffers

@@ -1,9 +1,8 @@
 import torch
-import numpy as np
 from stable_baselines3 import PPO
 from stable_baselines3.common.utils import get_linear_fn
 from stable_baselines3.common.callbacks import EvalCallback
-from sb3_extra_buffers.compressed import CompressedRolloutBuffer, has_numba, find_smallest_dtype
+from sb3_extra_buffers.compressed import CompressedRolloutBuffer, find_buffer_dtypes
 from sb3_extra_buffers.training_utils.atari import make_env
 
 MODEL_TYPE = "ppo"
@@ -12,23 +11,19 @@ NUM_ENVS_TRAIN = 8
 NUM_ENVS_EVAL = 8
 TRAINING_STEPS = 10_000_000
 COMPRESSION_METHOD = "rle-jit"
-ENV_TO_TEST = "PongNoFrameskip-v4"
-FINAL_MODEL_PATH = f"./{MODEL_TYPE}_{ENV_TO_TEST.removesuffix('NoFrameskip-v4')}_{FRAMESTACK}.zip"
-BEST_MODEL_DIR = f"./logs/{ENV_TO_TEST}/{MODEL_TYPE}/best_model"
+ATARI_GAME = "PongNoFrameskip-v4"
+FINAL_MODEL_PATH = f"./{MODEL_TYPE}_{ATARI_GAME.removesuffix('NoFrameskip-v4')}_{FRAMESTACK}.zip"
+BEST_MODEL_DIR = f"./logs/{ATARI_GAME}/{MODEL_TYPE}/best_model"
 SEED = 4089164106
 
 if __name__ == "__main__":
-    flatten_obs_shape = np.prod(make_env(env_id=ENV_TO_TEST, n_envs=1, framestack=FRAMESTACK).observation_space.shape)
-    buffer_dtypes = dict(elem_type=np.uint8, runs_type=find_smallest_dtype(flatten_obs_shape))
+    obs = make_env(env_id=ATARI_GAME, n_envs=1, framestack=FRAMESTACK).observation_space
+    buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype,
+                                       compression_method=COMPRESSION_METHOD)
 
-    # Pre-JIT Numba to avoid fork issues
-    if has_numba() and "jit" in COMPRESSION_METHOD:
-        from sb3_extra_buffers.compressed.compression_methods.compression_methods_numba import init_jit
-        init_jit(**buffer_dtypes)
-
-    env = make_env(env_id=ENV_TO_TEST, n_envs=NUM_ENVS_TRAIN, framestack=FRAMESTACK, seed=SEED)
+    env = make_env(env_id=ATARI_GAME, n_envs=NUM_ENVS_TRAIN, framestack=FRAMESTACK, seed=SEED)
     if NUM_ENVS_EVAL > 0:
-        eval_env = make_env(env_id=ENV_TO_TEST, n_envs=NUM_ENVS_EVAL, framestack=FRAMESTACK, seed=SEED)
+        eval_env = make_env(env_id=ATARI_GAME, n_envs=NUM_ENVS_EVAL, framestack=FRAMESTACK, seed=SEED)
     else:
         eval_env = env
 
@@ -54,14 +49,12 @@ if __name__ == "__main__":
         device="mps" if torch.mps.is_available() else "auto",
         seed=SEED,
     )
-    env.seed(SEED)
-    eval_env.seed(SEED)
 
     # Evaluation callback (optional)
     eval_callback = EvalCallback(
         eval_env,
         best_model_save_path=BEST_MODEL_DIR,
-        log_path=f"./logs/{ENV_TO_TEST}/{MODEL_TYPE}/eval",
+        log_path=f"./logs/{ATARI_GAME}/{MODEL_TYPE}/eval",
         n_eval_episodes=20,
         eval_freq=4096,
         deterministic=True,

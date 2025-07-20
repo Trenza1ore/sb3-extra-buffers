@@ -37,4 +37,7 @@ setup(
         "Stable-Baselines3": "https://github.com/DLR-RM/stable-baselines3",
         "Stable-Baselines3 - Contrib": "https://github.com/Stable-Baselines-Team/stable-baselines3-contrib",
     },
+    package_data={
+        "sb3_extra_buffers": ["version.txt"]
+    }
 )

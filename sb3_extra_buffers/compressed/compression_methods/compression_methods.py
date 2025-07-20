@@ -82,6 +82,10 @@ def has_numba() -> bool:
     return HAS_NUMBA
 
 
+def has_igzip() -> bool:
+    return HAS_IGZIP
+
+
 try:
     from sb3_extra_buffers.compressed.compression_methods.compression_methods_numba import rle_numba_decompress
     HAS_NUMBA = True

@@ -1,24 +1,18 @@
 from typing import Union, Optional, Any
 
-import re
 import warnings
-from functools import partial, lru_cache
+from functools import lru_cache
 import numpy as np
 import torch as th
 from gymnasium import spaces
-from stable_baselines3.common.buffers import BaseBuffer, ReplayBuffer
+from stable_baselines3.common.buffers import BaseBuffer, ReplayBuffer, psutil
 from stable_baselines3.common.type_aliases import ReplayBufferSamples
 from stable_baselines3.common.vec_env import VecNormalize
-from sb3_extra_buffers.compressed.compression_methods import COMPRESSION_METHOD_MAP
-
-try:
-    # Check memory used by replay buffer when possible
-    import psutil
-except ImportError:
-    psutil = None
+from sb3_extra_buffers.compressed.base import BaseCompressedBuffer
 
 
-class CompressedReplayBuffer(ReplayBuffer):
+class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
+    """ReplayBuffer, but compressed!"""
     observations: np.ndarray[object]
     next_observations: Optional[np.ndarray[object]] = None
     actions: np.ndarray
@@ -45,7 +39,7 @@ class CompressedReplayBuffer(ReplayBuffer):
         BaseBuffer.__init__(self, buffer_size, observation_space, action_space, device, n_envs=n_envs)
         self.normalize_images = normalize_images
         self.flatten_len = np.prod(self.obs_shape)
-        self.flatten_config = dict(shape=self.flatten_len, dtype=np.float32)
+        self.flatten_config = dict(shape=self.flatten_len, dtype=observation_space.dtype)
 
         # Handle dtypes
         self.dtypes = dtypes or dict(elem_type=np.uint8, runs_type=np.uint16)
@@ -56,21 +50,13 @@ class CompressedReplayBuffer(ReplayBuffer):
         # Compress and decompress
         self.compression_kwargs = compression_kwargs or self.dtypes
         self.decompression_kwargs = decompression_kwargs or self.dtypes
-        if compression_method[-1].isdigit():
-            re_match = re.search(r"(\w+?)([0-9]+)", compression_method)
-            assert re_match, f"Invalid compression shorthand: {compression_method}"
-            compression_method = re_match.group(1)
-            compression_kwargs["compresslevel"] = int(re_match.group(2))
-        self.compress = partial(COMPRESSION_METHOD_MAP[compression_method].compress, **self.compression_kwargs)
-        self.decompress = partial(COMPRESSION_METHOD_MAP[compression_method].decompress,
-                                  arr_configs=self.flatten_config, **self.decompression_kwargs)
+        BaseCompressedBuffer.__init__(self, compression_method=compression_method,
+                                      compression_kwargs=self.compression_kwargs,
+                                      decompression_kwargs=self.decompression_kwargs,
+                                      flatten_config=self.flatten_config)
 
         # Adjust buffer size
         self.buffer_size = max(buffer_size // n_envs, 1)
-
-        # Check that the replay buffer can fit into the memory
-        if psutil is not None:
-            mem_available = psutil.virtual_memory().available
 
         # there is a bug if both optimize_memory_usage and handle_timeout_termination are true
         # see https://github.com/DLR-RM/stable-baselines3/issues/934
@@ -98,7 +84,9 @@ class CompressedReplayBuffer(ReplayBuffer):
         self.handle_timeout_termination = handle_timeout_termination
         self.timeouts = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
 
+        # Check that the replay buffer can fit into the memory
         if psutil is not None:
+            mem_available = psutil.virtual_memory().available
             total_memory_usage: float = (
                 self.observations.nbytes + self.actions.nbytes + self.rewards.nbytes + self.dones.nbytes
             )
@@ -158,13 +146,13 @@ class CompressedReplayBuffer(ReplayBuffer):
             next_obs = np.clip(next_obs, elem_min, elem_max, dtype=elem_type, casting="unsafe")
 
         # Compress everything
-        self.observations[self.pos] = [self.compress(env_obs.ravel()) for env_obs in obs]
+        self.observations[self.pos] = [self._compress(env_obs.ravel()) for env_obs in obs]
 
         if self.optimize_memory_usage:
             next_pos = (self.pos + 1) % self.buffer_size
-            self.observations[next_pos] = [self.compress(env_obs.ravel()) for env_obs in next_obs]
+            self.observations[next_pos] = [self._compress(env_obs.ravel()) for env_obs in next_obs]
         else:
-            self.next_observations[self.pos] = [self.compress(env_obs.ravel()) for env_obs in next_obs]
+            self.next_observations[self.pos] = [self._compress(env_obs.ravel()) for env_obs in next_obs]
 
         self.actions[self.pos] = np.array(action)
         self.rewards[self.pos] = np.array(reward)
@@ -210,8 +198,8 @@ class CompressedReplayBuffer(ReplayBuffer):
 
     @lru_cache(maxsize=1024)
     def reconstruct_obs(self, idx: int, env_idx: int):
-        return self.decompress(self.observations[idx, env_idx]).reshape(self.obs_shape)
+        return self._decompress(self.observations[idx, env_idx]).reshape(self.obs_shape)
 
     @lru_cache(maxsize=1024)
     def reconstruct_nextobs(self, idx: int, env_idx: int):
-        return self.decompress(self.next_observations[idx, env_idx]).reshape(self.obs_shape)
+        return self._decompress(self.next_observations[idx, env_idx]).reshape(self.obs_shape)
