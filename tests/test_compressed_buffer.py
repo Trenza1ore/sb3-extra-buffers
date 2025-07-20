@@ -1,9 +1,10 @@
 import os
-import torch
 import pytest
+import torch
 import numpy as np
 from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.buffers import ReplayBuffer, RolloutBuffer
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from sb3_extra_buffers.compressed import CompressedReplayBuffer, CompressedRolloutBuffer, find_buffer_dtypes
 from sb3_extra_buffers.training_utils.atari import make_env
 
@@ -11,6 +12,7 @@ ENV_TO_TEST = "MsPacmanNoFrameskip-v4"
 STORAGE_DTYPES = dict(elem_type=np.uint8, runs_type=np.uint16)
 METHODS_TO_TEST = ["rle", "rle-jit", "gzip", "igzip", "none"]
 BATCH_SIZE = 64
+PARALLEL_TEST = True  # if using pytest-xdist, avoid using SubprocVecEnv
 
 
 def get_tests():
@@ -30,11 +32,13 @@ def get_tests():
 @pytest.mark.parametrize("env_id,compression_method,n_envs,n_stack,buffer_cls", list(get_tests()))
 def test_compressed_buffer(env_id, compression_method: str, n_envs: int, n_stack: int, buffer_cls: str):
     print(f"Testing {(env_id, compression_method, n_envs, n_stack, buffer_cls)}", flush=True)
+
     obs = make_env(env_id=env_id, n_envs=1, framestack=n_stack).observation_space
     buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype,
                                        compression_method=compression_method)
 
-    env = make_env(env_id=env_id, n_envs=n_envs, framestack=n_stack)
+    vec_env_cls = DummyVecEnv if PARALLEL_TEST else SubprocVecEnv
+    env = make_env(env_id=env_id, n_envs=n_envs, vec_env_cls=vec_env_cls, framestack=n_stack)
     if buffer_cls == "replay":
         def collect_data(model: DQN):
             return model.replay_buffer.sample(1000).observations.cpu().numpy()
@@ -53,11 +57,12 @@ def test_compressed_buffer(env_id, compression_method: str, n_envs: int, n_stack
         expected_dtype = np.float32
     else:
         raise NotImplementedError(f"What is {buffer_cls}?")
-    if compression_method != "none":
+    if compression_method == "none":
+        extra_args[buffer_cls+"_buffer_class"] = uncompressed
+        expected_dtype = obs.dtype
+    else:
         extra_args[buffer_cls+"_buffer_class"] = buffer_class
         extra_args[buffer_cls+"_buffer_kwargs"] = dict(dtypes=buffer_dtypes, compression_method=compression_method)
-    else:
-        extra_args[buffer_cls+"_buffer_class"] = uncompressed
 
     model = model_class(
         "CnnPolicy",

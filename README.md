@@ -107,6 +107,12 @@ Q1: 2490 | Q2: 4020 | Q3: 4020 | Relative IQR: 0.38 | Min: 2460 | Max: 4020
 Q1: 2690 | Q2: 3400 | Q3: 3880 | Relative IQR: 0.35 | Min: 1230 | Max: 4090
 ```
 ---
+## Pytest
+Make sure `pytest` and optionally `pytest-xdist` are already installed. Without `pytest-xdist` just remove `-n auto`.
+```bash
+pytest tests -n auto -v --durations=0
+```
+---
 ## Compressed Buffers
 Defined in `sb3_extra_buffers.compressed`
 
