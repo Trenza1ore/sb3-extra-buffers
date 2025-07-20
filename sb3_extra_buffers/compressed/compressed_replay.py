@@ -1,4 +1,4 @@
-from typing import Union, Optional, Any
+from typing import Union, Optional, Any, Literal
 
 import warnings
 from functools import lru_cache
@@ -33,13 +33,15 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
         normalize_images: bool = False,
         compression_method: str = "rle",
         compression_kwargs: Optional[dict] = None,
-        decompression_kwargs: Optional[dict] = None
+        decompression_kwargs: Optional[dict] = None,
+        output_dtype: Literal["raw", "float"] = "float"
     ):
         # Avoid calling ReplayBuffer.__init__ which might be over-allocating memory for observations
         BaseBuffer.__init__(self, buffer_size, observation_space, action_space, device, n_envs=n_envs)
         self.normalize_images = normalize_images
         self.flatten_len = np.prod(self.obs_shape)
         self.flatten_config = dict(shape=self.flatten_len, dtype=observation_space.dtype)
+        self.output_dtype = th.float32 if output_dtype == "float" else None
 
         # Handle dtypes
         self.dtypes = dtypes or dict(elem_type=np.uint8, runs_type=np.uint16)
@@ -183,8 +185,10 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
         with warnings.catch_warnings():
             warnings.filterwarnings(action="ignore", message="The given NumPy array is not writable.*",
                                     category=UserWarning)
-            obs = th.from_numpy(self._normalize_obs(obs, env)).to(device=self.device, dtype=th.float32, copy=True)
-            n_obs = th.from_numpy(self._normalize_obs(n_obs, env)).to(device=self.device, dtype=th.float32, copy=True)
+            obs = th.from_numpy(self._normalize_obs(obs, env)).to(
+                device=self.device, dtype=self.output_dtype, copy=True)
+            n_obs = th.from_numpy(self._normalize_obs(n_obs, env)).to(
+                device=self.device, dtype=self.output_dtype, copy=True)
 
         if self.normalize_images:
             obs /= 255.0
