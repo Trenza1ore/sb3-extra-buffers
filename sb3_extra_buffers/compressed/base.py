@@ -1,4 +1,4 @@
-from typing import Union, Any
+from typing import Union, Optional, Any
 
 import re
 import warnings
@@ -29,8 +29,11 @@ def find_buffer_dtypes(obs_shape: Union[int, tuple], elem_dtype: Union[np.intege
 
 class BaseCompressedBuffer:
     """Base Compressed Buffer Class"""
-    def __init__(self, compression_method: str, compression_kwargs: dict, decompression_kwargs: dict,
-                 flatten_config: dict):
+    def __init__(self, compression_method: Optional[str] = None, compression_kwargs: Optional[dict] = None,
+                 decompression_kwargs: Optional[dict] = None, flatten_config: Optional[dict] = None):
+        self.version = __version__
+        if compression_method is None:
+            return
         if compression_method[-1].isdigit():
             re_match = re.search(r"(\w+?)([0-9]+)", compression_method)
             assert re_match, f"Invalid compression shorthand: {compression_method}"
@@ -51,7 +54,6 @@ class BaseCompressedBuffer:
         self._compress = partial(COMPRESSION_METHOD_MAP[compression_method].compress, **compression_kwargs)
         self._decompress = partial(COMPRESSION_METHOD_MAP[compression_method].decompress,
                                    arr_configs=flatten_config, **decompression_kwargs)
-        self.version = __version__
 
 
 class DummyCls:
