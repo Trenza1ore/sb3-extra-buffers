@@ -36,7 +36,6 @@ Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so le
 > - `igzip` supports `0-3` compress levels, `0` is least compression
 > - Shorthands are supported, i.e. `igzip3` = `igzip` at level `3`
 
-
 ## Installation
 Install via PyPI:
 ```bash
@@ -51,7 +50,8 @@ pip install "sb3-extra-buffers[isal]"    # only installs python-isal
 pip install "sb3-extra-buffers[numba]"   # only installs numba
 pip install "sb3-extra-buffers[vizdoom]" # installs vizdoom
 ```
-**Example Usage:**
+
+## Example Usage
 ```python
 from stable_baselines3 import PPO
 from stable_baselines3.common.utils import get_linear_fn
@@ -64,7 +64,7 @@ ATARI_GAME = "MsPacmanNoFrameskip-v4"
 if __name__ == "__main__":
     # Get the most suitable dtypes for CompressedRolloutBuffer to use
     obs = make_env(env_id=ATARI_GAME, n_envs=1, framestack=4).observation_space
-    compression = "rle-jit"
+    compression = "rle-jit"  # or use "igzip1" since it's relatively noisy
     buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype, compression_method=compression)
 
     # Create vectorized environments after the find_buffer_dtypes call, which initializes jit
@@ -90,8 +90,8 @@ if __name__ == "__main__":
     # Cleanup
     env.close()
     eval_env.close()
-
 ```
+
 ## Current Project Structure
 ```
 sb3_extra_buffers
