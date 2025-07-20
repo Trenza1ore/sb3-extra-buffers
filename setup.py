@@ -33,7 +33,7 @@ setup(
     },
     # PyPI package information.
     project_urls={
-        "Code": "https://github.com/Trenza1ore/sb3-extra-buffers",
+        "Source Code": "https://github.com/Trenza1ore/sb3-extra-buffers",
         "Stable-Baselines3": "https://github.com/DLR-RM/stable-baselines3",
         "Stable-Baselines3 - Contrib": "https://github.com/Stable-Baselines-Team/stable-baselines3-contrib",
     },

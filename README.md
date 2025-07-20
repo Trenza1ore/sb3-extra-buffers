@@ -17,7 +17,7 @@ Reduce the memory consumption of memory buffers in Reinforcement Learning while 
 - [x] Compressed Rollout / Replay Buffer
 - [ ] Compressed variant for every buffer in SB3
 - [ ] Compressed variant for every buffer in SB3-Contrib
-- [ ] Compressed Array, maybe can make porting easier?
+- [x] Compressed Array, maybe can make porting easier?
 - [x] Recording Buffers for game episodes
 - [ ] Compressed Recording Buffers
 - [x] Buffer warm-up and model evaluation utility functions
@@ -71,6 +71,7 @@ sb3_extra_buffers
     |- compressed
     |    |- CompressedRolloutBuffer: RolloutBuffer with compression
     |    |- CompressedReplayBuffer: ReplayBuffer with compression
+    |    |- CompressedArray: Compressed numpy.ndarray subclass
     |
     |- recording
     |    |- RecordBuffer: A buffer for recording game states
