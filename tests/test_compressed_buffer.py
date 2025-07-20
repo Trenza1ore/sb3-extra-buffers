@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.buffers import ReplayBuffer, RolloutBuffer
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv
 from sb3_extra_buffers.compressed import CompressedReplayBuffer, CompressedRolloutBuffer, find_buffer_dtypes
 from sb3_extra_buffers.training_utils.atari import make_env
 
@@ -12,16 +12,16 @@ ENV_TO_TEST = ["MsPacmanNoFrameskip-v4", "PongNoFrameskip-v4"]
 
 
 def get_tests():
-    for compress_method in ["rle", "rle-jit", "gzip", "igzip", "none"]:
+    for compress_method in ["rle", "rle-old", "rle-jit", "gzip", "igzip", "none"]:
         suffix = [""]
         if "igzip" in compress_method:
             suffix = ["0", "3"]
         if "gzip" in compress_method:
             suffix = ["1", "5", "9"]
         for compress_suffix in suffix:
-            for n_env in [1, 2]:
-                for n_stack in [1, 4]:
-                    for env_id in ENV_TO_TEST:
+            for n_stack in [1, 4]:
+                for env_id in ENV_TO_TEST:
+                    for n_env in [1, 2]:
                         yield (env_id, compress_method + compress_suffix, n_env, n_stack)
 
 
@@ -42,9 +42,8 @@ def compressed_buffer_test(env_id: str, compression_method: str, n_envs: int, n_
     buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype,
                                        compression_method=compression_method)
 
-    # if using pytest-xdist, avoid using SubprocVecEnv
-    vec_env_cls = DummyVecEnv if os.environ.get("PYTEST_XDIST_WORKER") else SubprocVecEnv
-    env = make_env(env_id=env_id, n_envs=n_envs, vec_env_cls=vec_env_cls, framestack=n_stack)
+    # if using pytest, avoid using SubprocVecEnv
+    env = make_env(env_id=env_id, n_envs=n_envs, vec_env_cls=DummyVecEnv, framestack=n_stack)
     if buffer_type == "replay":
         def collect_data(model: DQN):
             return model.replay_buffer.sample(1000).observations.cpu().numpy()
@@ -60,7 +59,7 @@ def compressed_buffer_test(env_id: str, compression_method: str, n_envs: int, n_
         buffer_class = CompressedRolloutBuffer
         uncompressed = RolloutBuffer
         model_class = PPO
-        extra_args = dict(n_steps=256)
+        extra_args = dict(n_steps=384)
         expected_dtype = np.float32
         uncompressed_dtype = expected_dtype
     else:
