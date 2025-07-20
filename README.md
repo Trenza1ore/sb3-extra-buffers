@@ -13,42 +13,7 @@ Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to red
 Reduce the memory consumption of memory buffers in Reinforcement Learning while adding minimal overhead.
 
 **TO-DO List:**
-- [x] Compression Methods **(Essential)**
-  - [x] rle (with `numpy`)
-    - [x] allergic-to-for-loops version (faster implementation)
-  - [x] rle-jit (with `numba` jit compilation)
-    - [x] include initialization of `jit` in buffer dtype calculation
-  - [x] gzip (with `gzip`)
-  - [x] igzip (with `isal.igzip`)
-- [x] Compressed Buffers **(Essential)**
-  - [x] Compressed Rollout Buffer
-  - [x] Compressed Replay Buffer
-- [ ] Compressed Buffers **(Extras)**
-  - [ ] Other buffers in [SB3](https://github.com/DLR-RM/stable-baselines3)
-    - [ ] DictRolloutBuffer
-    - [ ] DictReplayBuffer
-    - [ ] NStepReplayBuffer
-  - [ ] Buffers in [SB3-Contrib](https://github.com/Stable-Baselines-Team/stable-baselines3-contrib)
-- [x] Compressed Buffer Tests (via `pytest`)
-  - [x] Parallel testing (`pytest-xdist`) support
-- [x] Compressed Array (maybe can make porting easier)
-  - [x] Essential `np.ndarray` operations
-  - [ ] `np.ndarray` slicing / view operations
-  - [ ] Full `np.ndarray` operations coverage??
-- [x] Recording Buffers for game episodes
-  - [ ] Compressed Recording Buffers
-- [x] Buffer warm-up and model evaluation utility functions
-- [x] Example train / eval scripts with compressed buffers
-  - [x] Atari
-  - [ ] ViZDoom
-- [x] Report results for example train / eval scripts
-  - [x] Atari
-  - [ ] ViZDoom
-- [ ] Report memory saving
-  - [ ] Atari
-  - [ ] ViZDoom
-- [ ] Documentation & better readme
-- [x] Define a standard bytes-out (compress) bytes-in (decompress) interface and store compressed obs in `np.ndarray[bytes]`
+See Issue https://github.com/Trenza1ore/sb3-extra-buffers/issues/1
 
 **Motivation:**
 Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so let's try to tackle it by not storing raw frame buffers in full `np.float32` or `np.uint8` directly and find something smaller instead. For any input data that are sparse and containing large contiguous region of repeating values, lossless compression techniques can be applied to reduce memory footprint.
