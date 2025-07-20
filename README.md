@@ -3,8 +3,7 @@
 # sb3-extra-buffers
 Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to reduce memory usage drastically with minimal overhead.
 
-![IMG_6983 png](https://github.com/user-attachments/assets/af8208ae-00e5-4f21-9f66-d0bfa9f8d093)
-
+![SB3-Extra-Buffers Banner](https://github.com/user-attachments/assets/20e59c8f-d593-4107-8219-f8db0667d0a6)
 
 **Links:**
 - [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3)
