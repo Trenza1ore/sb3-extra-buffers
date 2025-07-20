@@ -108,28 +108,25 @@ Q1: 2690 | Q2: 3400 | Q3: 3880 | Relative IQR: 0.35 | Min: 1230 | Max: 4090
 ```
 ---
 ## Pytest
-Make sure `pytest` and optionally `pytest-xdist` are already installed. Without `pytest-xdist` just remove `-n auto`.
+Make sure `pytest` and optionally `pytest-xdist` are already installed. Tests are compatible with `pytest-xdist` and would switch to using `DummyVecEnv` when `pytest-xdist` is enabled.
 ```bash
-pytest tests -n auto -v --durations=0
+pytest tests -v --durations=0 --tb=short
 ```
 ---
 ## Compressed Buffers
 Defined in `sb3_extra_buffers.compressed`
 
 **JIT Before Multi-Processing:**
-When using `rle-jit`, remember to trigger JIT compilation before any multi-processing code is executed via  `init_jit` or `find_buffer_dtypes`.
+When using `rle-jit`, remember to trigger JIT compilation before any multi-processing code is executed via  `find_buffer_dtypes` or `init_jit`.
 ```python
 # Code for other stuffs...
-from sb3_extra_buffers.compressed.compression_methods import has_numba
 
-# Compressed-buffer-related settings
-compression_method = "rle-jit"
-storage_dtypes = dict(elem_type=np.uint8, runs_type=np.uint16)
+# Get observation space from environment
+obs = make_env(env_id=ATARI_GAME, n_envs=1, framestack=4).observation_space
 
-# Pre-JIT Numba to avoid fork issues
-if has_numba() and "jit" in compression_method:
-    from sb3_extra_buffers.compressed.compression_methods.compression_methods_numba import init_jit
-    init_jit(**storage_dtypes)
+# Get the buffer datatype settings via find_buffer_dtypes
+compression = "rle-jit"
+buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype, compression_method=compression)
 
 # Now, safe to initialize multi-processing environments!
 env = SubprocVecEnv(...)
