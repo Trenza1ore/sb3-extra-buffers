@@ -51,6 +51,47 @@ pip install "sb3-extra-buffers[isal]"    # only installs python-isal
 pip install "sb3-extra-buffers[numba]"   # only installs numba
 pip install "sb3-extra-buffers[vizdoom]" # installs vizdoom
 ```
+**Example Usage:**
+```python
+from stable_baselines3 import PPO
+from stable_baselines3.common.utils import get_linear_fn
+from stable_baselines3.common.callbacks import EvalCallback
+from sb3_extra_buffers.compressed import CompressedRolloutBuffer, find_buffer_dtypes
+from sb3_extra_buffers.training_utils.atari import make_env
+
+ATARI_GAME = "MsPacmanNoFrameskip-v4"
+
+if __name__ == "__main__":
+    # Get the most suitable dtypes for CompressedRolloutBuffer to use
+    obs = make_env(env_id=ATARI_GAME, n_envs=1, framestack=4).observation_space
+    compression = "rle-jit"
+    buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype, compression_method=compression)
+
+    # Create vectorized environments after the find_buffer_dtypes call, which initializes jit
+    env = make_env(env_id=ATARI_GAME, n_envs=8, framestack=4)
+    eval_env = make_env(env_id=ATARI_GAME, n_envs=10, framestack=4)
+
+    # Create PPO model with CompressedRolloutBuffer as rollout buffer class
+    model = PPO("CnnPolicy", env, verbose=1, learning_rate=get_linear_fn(2.5e-4, 0, 1), n_steps=128,
+                batch_size=256, clip_range=get_linear_fn(0.1, 0, 1), n_epochs=4, ent_coef=0.01, vf_coef=0.5,
+                seed=1970626835, device="mps", rollout_buffer_class=CompressedRolloutBuffer,
+                rollout_buffer_kwargs=dict(dtypes=buffer_dtypes, compression_method=compression))
+
+    # Evaluation callback (optional)
+    eval_callback = EvalCallback(eval_env, n_eval_episodes=20, eval_freq=8192, log_path=f"./logs/{ATARI_GAME}/ppo/eval",
+                                 best_model_save_path=f"./logs/{ATARI_GAME}/ppo/best_model")
+
+    # Training
+    model.learn(total_timesteps=10_000_000, callback=eval_callback, progress_bar=True)
+
+    # Save the final model
+    model.save("ppo_MsPacman_4.zip")
+
+    # Cleanup
+    env.close()
+    eval_env.close()
+
+```
 ## Current Project Structure
 ```
 sb3_extra_buffers
@@ -58,6 +99,7 @@ sb3_extra_buffers
     |    |- CompressedRolloutBuffer: RolloutBuffer with compression
     |    |- CompressedReplayBuffer: ReplayBuffer with compression
     |    |- CompressedArray: Compressed numpy.ndarray subclass
+    |    |- find_buffer_dtypes: Find suitable buffer dtypes and initialize jit
     |
     |- recording
     |    |- RecordBuffer: A buffer for recording game states
@@ -80,10 +122,10 @@ Q1:   21 | Q2:   21 | Q3:   21 | Relative IQR: 0.00 | Min: 20 | Max: 21
 ```
 **PPO on `MsPacmanNoFrameskip-v4`, trained for 10M steps using `rle-jit`, framestack: `4`**
 ```
-(Best ) Evaluated 10000 episodes, mean reward: 
-
-(Final) Evaluated 10000 episodes, mean reward: 
-
+(Best ) Evaluated 10000 episodes, mean reward: 2667.0 +/- 290.00
+Q1: 2300 | Q2: 2490 | Q3: 3000 | Relative IQR: 0.28 | Min: 2300 | Max: 3000
+(Final) Evaluated 10000 episodes, mean reward: 2500.9 +/- 221.03
+Q1: 2300 | Q2: 2390 | Q3: 2490 | Relative IQR: 0.08 | Min: 1420 | Max: 3000
 ```
 **DQN on `MsPacmanNoFrameskip-v4`, trained for 10M steps using `rle-jit`, framestack: `4`**
 ```
@@ -119,46 +161,6 @@ buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype, co
 
 # Now, safe to initialize multi-processing environments!
 env = SubprocVecEnv(...)
-```
-
-**Example Usage:**
-```python
-from stable_baselines3 import PPO
-from stable_baselines3.common.utils import get_linear_fn
-from stable_baselines3.common.callbacks import EvalCallback
-from sb3_extra_buffers.compressed import CompressedRolloutBuffer, find_buffer_dtypes
-from sb3_extra_buffers.training_utils.atari import make_env
-
-ATARI_GAME = "MsPacmanNoFrameskip-v4"
-
-if __name__ == "__main__":
-    obs = make_env(env_id=ATARI_GAME, n_envs=1, framestack=4).observation_space
-    compression = "rle-jit"
-    buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype, compression_method=compression)
-
-    env = make_env(env_id=ATARI_GAME, n_envs=8, framestack=4)
-    eval_env = make_env(env_id=ATARI_GAME, n_envs=10, framestack=4)
-
-    # Create PPO model using CompressedRolloutBuffer
-    model = PPO("CnnPolicy", env, verbose=1, learning_rate=get_linear_fn(2.5e-4, 0, 1), n_steps=128,
-                batch_size=256, clip_range=get_linear_fn(0.1, 0, 1), n_epochs=4, ent_coef=0.01, vf_coef=0.5,
-                seed=1970626835, device="mps", rollout_buffer_class=CompressedRolloutBuffer,
-                rollout_buffer_kwargs=dict(dtypes=buffer_dtypes, compression_method=compression))
-
-    # Evaluation callback (optional)
-    eval_callback = EvalCallback(eval_env, n_eval_episodes=20, eval_freq=8192, log_path=f"./logs/{ATARI_GAME}/ppo/eval",
-                                 best_model_save_path=f"./logs/{ATARI_GAME}/ppo/best_model")
-
-    # Training
-    model.learn(total_timesteps=10_000_000, callback=eval_callback, progress_bar=True)
-
-    # Save the final model
-    model.save("ppo_MsPacman_4.zip")
-
-    # Cleanup
-    env.close()
-    eval_env.close()
-
 ```
 ---
 ## Recording Buffers
