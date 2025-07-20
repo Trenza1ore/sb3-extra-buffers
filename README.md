@@ -12,7 +12,7 @@ Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to red
 **Main Goal:**
 Reduce the memory consumption of memory buffers in Reinforcement Learning while adding minimal overhead.
 
-**TO-DO List:**
+**Current Progress & Available Features:**
 See Issue https://github.com/Trenza1ore/sb3-extra-buffers/issues/1
 
 **Motivation:**
