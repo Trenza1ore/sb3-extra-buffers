@@ -15,6 +15,7 @@ Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to red
 Reduce the memory consumption of memory buffers in Reinforcement Learning while adding minimal overhead.
 
 **Current Progress & Available Features:**
+Memory Saving: [reported here](#memory-usage-test-for-compressed-buffers-on-mspacmannoframeskip-v4)
 See Issue https://github.com/Trenza1ore/sb3-extra-buffers/issues/1
 
 **Motivation:**
@@ -164,6 +165,28 @@ buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype, co
 # Now, safe to initialize multi-processing environments!
 env = SubprocVecEnv(...)
 ```
+### Memory Usage Test for Compressed Buffers (on `MsPacmanNoFrameskip-v4`)
+- **Frame Stack & Vec Envs**: both 4
+- **Buffer Size**: 400,000 (split across 4 vectorized environments)
+- **Using `optimize_memory_usage`**: True
+- **Steps Per Env**: 121,558 (Total Observations = 486,232, but truncated to 400,000)
+- **Evaluation Time**: 00:17:33 on M4 Macbook Air, using `mps` backend (out of which more than 10 minutes were spent on `gzip` alone?!).
+- **Settings**: The [example DQN model](#Example-Scripts) is loaded and evaluated using the code in [examples/example_eval_memory_saving.py](https://github.com/Trenza1ore/sb3-extra-buffers/blob/main/examples/example_eval_memory_saving.py). The exact same observations are stored into each buffer. `Latency` refers to the total number of seconds spent on adding observation to the specific buffer and `baseline` refers to using `ReplayBuffer` directly.
+
+| Compression   | Memory (MB) | Memory %  | Latency (s) |
+|----------|-------------|---------|----------------------|
+| baseline     | 10767       | 100.0%  | 3.708                |
+| rle-jit  | 2048        | 19.0%   | 14.621               |
+| igzip0   | 576         | 5.3%    | 12.372               |
+| igzip1   | 490         | 4.5%    | 21.890               |
+| igzip2   | 489         | 4.5%    | 20.515               |
+| gzip1    | 480         | 4.5%    | 41.989               |
+| gzip3    | 439         | 4.1%    | 46.568               |
+| igzip3   | 432         | 4.0%    | 35.700               |
+| gzip5    | 386         | 3.6%    | 64.545               |
+| gzip7    | 372         | 3.5%    | 117.228              |
+| gzip9    | 369         | 3.4%    | 354.114              |
+
 ---
 ## Recording Buffers
 Defined in `sb3_extra_buffers.recording`

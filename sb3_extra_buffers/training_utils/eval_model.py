@@ -1,7 +1,8 @@
 from typing import Union, Iterable
-from sb3_extra_buffers import BufferType
+from sb3_extra_buffers import BufferType, NumberType
 
 import gc
+import time
 import numpy as np
 import torch as th
 from stable_baselines3.common.base_class import BaseAlgorithm
@@ -21,9 +22,10 @@ def process_outcome(infos: list[dict]) -> tuple[np.ndarray[float], np.ndarray[bo
 
 
 def eval_model(n_eps: int, eval_env: VecEnv, eval_model: BaseAlgorithm, close_env: bool = True,
-               buffer: Union[BufferType, Iterable[BufferType], None] = None) -> list:
+               buffer: Union[BufferType, Iterable[BufferType], None] = None) -> tuple[list[NumberType], list]:
     if not (isinstance(buffer, Iterable) or (buffer is None)):
         buffer = [buffer]
+    buffer_latency = [0.0] * len(buffer)
 
     # Prepare for warming up buffer
     pbar = tqdm(total=n_eps, desc=f"Eval ({n_eps})")
@@ -50,11 +52,13 @@ def eval_model(n_eps: int, eval_env: VecEnv, eval_model: BaseAlgorithm, close_en
             pbar.update(new_finished_episodes)
             eps_rewards.extend(real_reward[np.isfinite(real_reward)])
 
-        for b in buffer:
+        for b_idx, b in enumerate(buffer):
+            t = time.time()
             for i in reshape_iter:
                 j = i * buffer_n_envs
                 k = j + buffer_n_envs
                 b.add(obs[j:k, 3:4, ...], new_obs[j:k, 3:4, ...], action[j:k], reward[j:k], done[j:k], info[j:k])
+            buffer_latency[b_idx] += time.time() - t
 
         obs = new_obs
 
@@ -79,4 +83,4 @@ def eval_model(n_eps: int, eval_env: VecEnv, eval_model: BaseAlgorithm, close_en
     pbar.set_description_str("Done")
     pbar.close()
 
-    return eps_rewards
+    return eps_rewards, buffer_latency
