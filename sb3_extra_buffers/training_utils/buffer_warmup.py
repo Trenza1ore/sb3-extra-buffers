@@ -1,19 +1,21 @@
-from typing import Optional, Union
+from typing import Optional, Union, Iterable
+from sb3_extra_buffers import BufferType
 
 from stable_baselines3.common.base_class import BaseAlgorithm
-from stable_baselines3.common.buffers import ReplayBuffer
 from stable_baselines3.common.vec_env import VecEnv
 from sb3_extra_buffers.training_utils.eval_model import eval_model
 
 
-def warm_up(buffer: ReplayBuffer, n_envs: int, warmup_env: VecEnv, warmup_model: BaseAlgorithm,
-            warmup_episodes: Optional[int] = None, mean_ep_len: Union[int, float, None] = None) -> float:
+def warm_up(buffer: Union[BufferType, Iterable[BufferType]], n_envs: int, warmup_env: VecEnv,
+            warmup_model: BaseAlgorithm, warmup_episodes: Optional[int] = None,
+            mean_ep_len: Union[int, float, None] = None) -> list[Union[int, float]]:
     """Perform buffer warm up with set model"""
-
+    if not (isinstance(buffer, Iterable) or (buffer is None)):
+        buffer = [buffer]
     # Calculate/validate number of episodes for buffer warm-up
     if not isinstance(warmup_episodes, int) or warmup_episodes < 1:
         if isinstance(mean_ep_len, (int, float)) and mean_ep_len > 0:
-            warmup_episodes = round(buffer.buffer_size * n_envs * 0.9 / mean_ep_len)
+            warmup_episodes = round(buffer[0].buffer_size * n_envs * 0.9 / mean_ep_len)
         else:
             raise ValueError("Please provide either warmup_episodes or mean_ep_len.")
 

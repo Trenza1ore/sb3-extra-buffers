@@ -1,12 +1,11 @@
-from typing import Union
+from typing import Union, Iterable
+from sb3_extra_buffers import BufferType
 
 import gc
 import numpy as np
 import torch as th
 from stable_baselines3.common.base_class import BaseAlgorithm
-from stable_baselines3.common.buffers import ReplayBuffer
 from stable_baselines3.common.vec_env import VecEnv
-from sb3_extra_buffers.recording import BaseRecordBuffer
 try:
     from tqdm.rich import tqdm
 except ImportError:
@@ -22,12 +21,15 @@ def process_outcome(infos: list[dict]) -> tuple[np.ndarray[float], np.ndarray[bo
 
 
 def eval_model(n_eps: int, eval_env: VecEnv, eval_model: BaseAlgorithm, close_env: bool = True,
-               buffer: Union[ReplayBuffer, BaseRecordBuffer, None] = None) -> list:
+               buffer: Union[BufferType, Iterable[BufferType], None] = None) -> list:
+    if not (isinstance(buffer, Iterable) or (buffer is None)):
+        buffer = [buffer]
+
     # Prepare for warming up buffer
     pbar = tqdm(total=n_eps, desc=f"Eval ({n_eps})")
     finished_eps_count = 0
     eval_n_envs = eval_env.num_envs
-    buffer_n_envs = buffer.n_envs if buffer else 1
+    buffer_n_envs = buffer[0].n_envs if buffer else 1
     reshape_factor = eval_n_envs // buffer_n_envs
     reshape_iter = list(range(reshape_factor))
 
@@ -48,11 +50,11 @@ def eval_model(n_eps: int, eval_env: VecEnv, eval_model: BaseAlgorithm, close_en
             pbar.update(new_finished_episodes)
             eps_rewards.extend(real_reward[np.isfinite(real_reward)])
 
-        if buffer:
+        for b in buffer:
             for i in reshape_iter:
                 j = i * buffer_n_envs
                 k = j + buffer_n_envs
-                buffer.add(obs[j:k, 3:4, ...], new_obs[j:k, 3:4, ...], action[j:k], reward[j:k], done[j:k], info[j:k])
+                b.add(obs[j:k, 3:4, ...], new_obs[j:k, 3:4, ...], action[j:k], reward[j:k], done[j:k], info[j:k])
 
         obs = new_obs
 
