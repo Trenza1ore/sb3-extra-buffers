@@ -219,3 +219,6 @@ test*.py
 
 # Pytest
 !tests/*.py
+
+# MacOS Weirdness
+.DS_Store

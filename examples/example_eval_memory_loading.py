@@ -21,16 +21,16 @@ N_ENVS = 4
 RENDER_GAMES = False
 CLEAR_SCREEN = True
 BUFFERSIZE = 40_000
-COMPRESSION_METHODS = ["none", "rle",
-                       "igzip0", "igzip1", "igzip3", "gzip0", "gzip1", "gzip3",
+COMPRESSION_METHODS = ["none", "rle", "rle-old", "rle-jit",
+                       "igzip0", "igzip1", "igzip3", "gzip1", "gzip3",
                        "zstd1", "zstd3", "zstd5", "zstd-1", "zstd-3", "zstd-5",
                        "zstd10", "zstd15", "zstd22", "zstd-20", "zstd-50", "zstd-100",
                        "lz4-frame/1", "lz4-frame/5", "lz4-frame/9", "lz4-frame/12",
                        "lz4-block/1", "lz4-block/5", "lz4-block/9", "lz4-block/16"]
 
 if __name__ == "__main__":
-    device = "mps" if th.mps.is_available() else "auto"
-    buffer_device = "cpu"
+    device = "mps" if th.mps.is_available() else "cuda" if th.cuda.is_available() else "cpu"
+    buffer_device = device
     render_mode = "human" if RENDER_GAMES else "rgb_array"
     vec_env = make_env(env_id=ATARI_GAME, n_envs=N_ENVS, framestack=FRAMESTACK, render_mode=render_mode)
     vec_env_obs = vec_env.observation_space
@@ -38,7 +38,8 @@ if __name__ == "__main__":
     if CLEAR_SCREEN:
         os.system("cls" if platform.system() == "Windows" else "clear")
 
-    buffer_config = dict(buffer_size=BUFFERSIZE, observation_space=vec_env.observation_space,
+    PER_ENV = ceil(BUFFERSIZE / N_ENVS)
+    buffer_config = dict(buffer_size=PER_ENV, observation_space=vec_env.observation_space,
                          action_space=vec_env.action_space, n_envs=vec_env.num_envs,
                          device=buffer_device)
     compression_config = dict(dtypes=buffer_dtype)
@@ -49,16 +50,21 @@ if __name__ == "__main__":
         ) for compression_method in COMPRESSION_METHODS
     })
 
-    n_steps = ceil(BUFFERSIZE / N_ENVS)
     vec_buffer = DummyVecRolloutBuffer(**buffer_config, buffers=list(buffer_dict.values()))
     model_path = FINAL_MODEL_PATH
     model = PPO.load(FINAL_MODEL_PATH, env=vec_env, device=device, custom_objects=dict(replay_buffer_class=DummyCls))
     _, callback = model._setup_learn(model._total_timesteps, progress_bar=True)
-    callback.on_training_start(dict(total_timesteps=N_ENVS*n_steps), {})
+    callback.on_training_start(dict(total_timesteps=BUFFERSIZE), {})
     model.collect_rollouts(env=vec_env, callback=callback, rollout_buffer=vec_buffer,
-                           n_rollout_steps=n_steps)
+                           n_rollout_steps=PER_ENV)
     callback._on_training_end()
     del vec_buffer, model
+    try:
+        getattr(th, device).empty_cache()
+    except Exception as e:
+        print(e)
+    gc.collect()
+    time.sleep(10)
 
     base_size = -1
     sort_dict = dict()
@@ -87,22 +93,22 @@ if __name__ == "__main__":
                 break
 
         # Prepare content for printing
-        assert v.full, f"Buffer not filled! pos: {v.pos}"
-        pos = int(v.pos + v.observations.shape[0])
+        pos = int(v.pos)
         if k == "baseline":
             print(f"{pos} steps for each env, {4*pos} steps in total.")
 
-        t = time.time()
-        for x in v.get(batch_size=64):
-            x = x
-        ll = time.time() - t
+        t = time.time_ns()
+        [x for x in v.get(batch_size=64)]
+        ll = (time.time_ns() - t) / 1000_000
 
-        sort_dict[f"| {k:15s} | {size_str} | {size_vs_base:5.1f}% | {ll:7.1f}s |"] = size_vs_base
-        del buffer_dict[k], buffer, v, x
+        sort_dict[f"| {k:15s} | {size_str} | {size_vs_base:5.1f}% | {ll:6.1f}ms |"] = (ll, size_vs_base)
+        del buffer_dict[k], buffer, v
         gc.collect()
 
     # Print out formatted table
-    print(f"|{'Compression':^17s}|{'Memory':^8s}|{'Memory %':^8s}|{'Latency(l)':^10s}|")
+    print(f"Device: {device}")
+    print(f"|{'Compression':^17s}|{'Memory':^8s}|{'Memory %':^8s}|{'Latency':^10s}|")
     print(f"|{'-'*17}|{'-'*8}|{'-'*8}|{'-'*10}|")
-    for k, v in sorted(sort_dict.items(), key=lambda x: x[1], reverse=True):
+    sorted_list = sorted(sort_dict.items(), key=lambda x: x[1][1])
+    for k, v in sorted(sorted_list, key=lambda x: x[1][0]):
         print(k)
