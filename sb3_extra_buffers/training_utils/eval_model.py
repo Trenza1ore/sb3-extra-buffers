@@ -1,5 +1,5 @@
-from typing import Union, Iterable
-from sb3_extra_buffers import BufferType, NumberType
+from typing import Union, Iterable, get_args
+from sb3_extra_buffers import ReplayLike, NumberType
 
 import gc
 import time
@@ -22,10 +22,12 @@ def process_outcome(infos: list[dict]) -> tuple[np.ndarray[float], np.ndarray[bo
 
 
 def eval_model(n_eps: int, eval_env: VecEnv, eval_model: BaseAlgorithm, close_env: bool = True,
-               buffer: Union[BufferType, Iterable[BufferType], None] = None) -> tuple[list[NumberType], list]:
+               buffer: Union[ReplayLike, Iterable[ReplayLike], None] = None) -> tuple[list[NumberType], list]:
     if not (isinstance(buffer, Iterable) or (buffer is None)):
         buffer = [buffer]
     buffer_latency = [0.0] * len(buffer)
+    buffer_ok_types = get_args(ReplayLike)
+    assert buffer is None or all(isinstance(b, buffer_ok_types) for b in buffer)
 
     # Prepare for warming up buffer
     pbar = tqdm(total=n_eps, desc=f"Eval ({n_eps})")

@@ -1,12 +1,12 @@
 from typing import Optional, Union, Iterable
-from sb3_extra_buffers import BufferType, NumberType
+from sb3_extra_buffers import ReplayLike, NumberType
 
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.vec_env import VecEnv
 from sb3_extra_buffers.training_utils.eval_model import eval_model
 
 
-def warm_up(buffer: Union[BufferType, Iterable[BufferType]], n_envs: int, warmup_env: VecEnv,
+def warm_up(buffer: Union[ReplayLike, Iterable[ReplayLike]], n_envs: int, warmup_env: VecEnv,
             warmup_model: BaseAlgorithm, warmup_episodes: Optional[int] = None,
             mean_ep_len: Union[int, float, None] = None) -> tuple[list[NumberType], list[NumberType]]:
     """Perform buffer warm up with set model"""
