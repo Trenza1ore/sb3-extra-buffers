@@ -30,7 +30,7 @@ Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so le
 - `Color Palette` game frames from retro video games
 - `Grayscale` observations
 - `RGB (Color)` observations
-- For noisy input with a lot of variation (mostly `RGB`), using `gzip1` or `igzip0` is recommended, run-length encoding won't work as great and can potentially even increase memory usage.
+- For noisy input with a lot of variation (mostly `RGB`), using `zstd` is recommended, run-length encoding won't work as great and can potentially even increase memory usage. [See benchmark](#memory-usage-test-for-compressed-buffers-on-mspacmannoframeskip-v4).
 
 **Implemented Compression Methods:**
 - `none` No compression other than casting to `elem_type` and storing as `bytes`.
@@ -38,7 +38,7 @@ Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so le
 - `rle-jit` JIT-compiled version of `rle`, uses [numba](https://numba.pydata.org) library.
 - `gzip` Built-in gzip compression via `gzip`.
 - `igzip` Intel accelerated variant via `isal.igzip`, uses [python-isal](https://github.com/pycompression/python-isal) library.
-- `zstd` Zstandard compression via [python-zstd](https://github.com/sergey-dryabzhinsky/python-zstd).
+- **`zstd`** Zstandard compression via [python-zstd](https://github.com/sergey-dryabzhinsky/python-zstd). **(Recommended)**
 - `lz4-frame` LZ4 (frame format) compression via [python-lz4](https://github.com/python-lz4/python-lz4).
 - `lz4-block` LZ4 (block format) compression via [python-lz4](https://github.com/python-lz4/python-lz4).
 
@@ -183,43 +183,48 @@ env = SubprocVecEnv(...)
 ```
 ### Memory Usage Test for Compressed Buffers (on `MsPacmanNoFrameskip-v4`)
 - **Frame Stack & Vec Envs**: both 4
-- **Buffer Size**: 400,000 (split across 4 vectorized environments)
+- **Buffer Size**: 40,000 (split across 4 vectorized environments)
 - **Using `optimize_memory_usage`**: True
-- **Steps Per Env**: 121,558 (Total Observations = 486,232, but truncated to 400,000)
-- **Evaluation Time**: 00:17:33 on M4 Macbook Air, using `mps` backend (out of which more than 10 minutes were spent on `gzip` alone?!).
+- **Steps Per Env**: 12,475 steps for each env (49,900 steps in total, but truncated to 40,000)
+- **Evaluation Time**: `0:16:21` on an M4 Macbook Air, using `mps` backend (out of which almost 10 minutes were spent on `zstd22` alone?!).
 - **Settings**: The [example DQN model](#Example-Scripts) is loaded and evaluated using the code in [examples/example_eval_memory_saving.py](https://github.com/Trenza1ore/sb3-extra-buffers/blob/main/examples/example_eval_memory_saving.py). The exact same observations are stored into each buffer. `Latency` refers to the total number of seconds spent on adding observation to the specific buffer and `baseline` refers to using `ReplayBuffer` directly.
+- **TLDR**:
+  - `zstd` in general is very decent at save latency & memory saving
+  - `zstd-1` ~ `zstd-5` seems to be the sweet spot
+  - `gzip0` should be avoided
+  - MsPacman at `84x84` resolution is too visually noisy for `rle`
 
-|   Compression   | Memory |Memory %|Latency |
-|-----------------|--------|--------|--------|
-| baseline        | 10.5GB | 100.0% |   5.0s |
-| none            | 2.64GB |  25.1% |   5.2s |
-| zstd-100        | 2.05GB |  19.5% |   8.1s |
-| zstd-50         | 1.65GB |  15.7% |   9.3s |
-| lz4-frame/1     |  683MB |   6.3% |   9.4s |
-| zstd-3          |  526MB |   4.9% |  12.2s |
-| zstd-5          |  611MB |   5.7% |  12.3s |
-| zstd-20         | 1.13GB |  10.7% |  12.4s |
-| igzip0          |  576MB |   5.3% |  13.0s |
-| zstd-1          |  460MB |   4.3% |  13.6s |
-| rle             | 2.00GB |  19.0% |  15.8s |
-| zstd1           |  434MB |   4.0% |  16.3s |
-| zstd3           |  410MB |   3.8% |  16.4s |
-| lz4-block/1     |  510MB |   4.7% |  20.3s |
-| igzip1          |  490MB |   4.5% |  23.0s |
-| zstd5           |  378MB |   3.5% |  26.3s |
-| gzip0           | 2.65GB |  25.2% |  29.1s |
-| lz4-block/5     |  487MB |   4.5% |  30.0s |
-| lz4-frame/5     |  494MB |   4.6% |  31.1s |
-| igzip3          |  432MB |   4.0% |  37.0s |
-| gzip1           |  481MB |   4.5% |  60.2s |
-| gzip3           |  439MB |   4.1% |  65.2s |
-| lz4-frame/9     |  483MB |   4.5% | 106.1s |
-| lz4-block/9     |  476MB |   4.4% | 106.6s |
-| zstd10          |  362MB |   3.4% | 225.5s |
-| lz4-frame/12    |  479MB |   4.5% | 230.9s |
-| lz4-block/16    |  472MB |   4.4% | 231.3s |
-| zstd15          |  326MB |   3.0% | 675.3s |
-| zstd22          |  325MB |   3.0% | 1301.2s |
+|   Compression   | Memory |Memory %| Latency  |
+|-----------------|--------|--------|----------|
+| baseline        | 1.05GB | 100.0% |     0.9s |
+| none            | 1.05GB | 100.1% |     1.2s |
+| zstd-100        |  387MB |  36.0% |     1.8s |
+| zstd-50         |  306MB |  28.4% |     1.9s |
+| lz4-frame/1     |  118MB |  10.9% |     2.1s |
+| gzip0           | 1.05GB | 100.2% |     2.1s |
+| zstd-5          | 82.9MB |   7.7% |     2.1s |
+| zstd-20         |  181MB |  16.8% |     2.2s |
+| zstd-3          | 73.9MB |   6.9% |     2.3s |
+| zstd-1          | 66.0MB |   6.1% |     2.3s |
+| zstd1           | 61.3MB |   5.7% |     2.7s |
+| zstd3           | 59.4MB |   5.5% |     3.0s |
+| igzip0          |  129MB |  12.0% |     3.4s |
+| rle             |  811MB |  75.3% |     4.0s |
+| lz4-block/1     | 83.2MB |   7.7% |     4.6s |
+| igzip1          |  114MB |  10.6% |     5.0s |
+| zstd5           | 55.9MB |   5.2% |     5.4s |
+| lz4-block/5     | 75.1MB |   7.0% |     6.3s |
+| lz4-frame/5     | 75.9MB |   7.0% |     6.5s |
+| gzip1           |  104MB |   9.6% |     7.6s |
+| gzip3           | 81.9MB |   7.6% |     8.3s |
+| igzip3          | 81.5MB |   7.6% |    10.5s |
+| zstd10          | 52.8MB |   4.9% |    10.8s |
+| lz4-block/9     | 72.0MB |   6.7% |    20.0s |
+| lz4-frame/9     | 72.7MB |   6.8% |    20.0s |
+| lz4-block/16    | 71.3MB |   6.6% |    57.9s |
+| lz4-frame/12    | 72.0MB |   6.7% |    58.4s |
+| zstd15          | 48.5MB |   4.5% |    99.8s |
+| zstd22          | 47.6MB |   4.4% |   590.7s |
 
 ---
 ## Recording Buffers

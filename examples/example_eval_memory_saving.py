@@ -1,4 +1,5 @@
 import os
+import gc
 import sys
 import platform
 import numpy as np
@@ -11,11 +12,11 @@ from sb3_extra_buffers.training_utils.buffer_warmup import eval_model
 from sb3_extra_buffers.training_utils.atari import make_env
 from examples.example_train_replay import FINAL_MODEL_PATH, ATARI_GAME, FRAMESTACK
 
-N_EVAL_EPISODES = 125
+N_EVAL_EPISODES = 50
 N_ENVS = 4
 RENDER_GAMES = False
 CLEAR_SCREEN = True
-BUFFERSIZE = 100_000
+BUFFERSIZE = 40_000
 COMPRESSION_METHODS = ["none", "rle",
                        "igzip0", "igzip1", "igzip3", "gzip0", "gzip1", "gzip3",
                        "zstd1", "zstd3", "zstd5", "zstd-1", "zstd-3", "zstd-5",
@@ -55,6 +56,7 @@ if __name__ == "__main__":
     print(f"Evaluated {N_EVAL_EPISODES} episodes, mean reward: {reward_avg:.1f} +/- {reward_std:.2f}")
     print(f"Q1: {Q1:4d} | Q2: {Q2:4d} | Q3: {Q3:4d} | Relative IQR: {relative_IQR:4.2f}", end=" | ")
     print(f"Min: {reward_min} | Max: {reward_max}")
+    del all_buffers
 
     base_size = -1
     sort_dict = dict()
@@ -84,12 +86,13 @@ if __name__ == "__main__":
 
         # Prepare content for printing
         assert v.full, f"Buffer not filled! pos: {v.pos}"
-        pos = v.pos + v.observations.shape[0]
+        pos = int(v.pos + v.observations.shape[0])
         if k == "baseline":
             print(f"{pos} steps for each env, {4*pos} steps in total.")
         # else:
         #     np.save(f"{save_dir}/{k.replace('/', '-')}.npy", buffer)
-        del buffer_dict[k]
+        del buffer_dict[k], buffer, v
+        gc.collect()
         sort_dict[f"| {k:15s} | {size_str} | {size_vs_base:5.1f}% | {l:7.1f}s |"] = l
 
     # Print out formatted table
