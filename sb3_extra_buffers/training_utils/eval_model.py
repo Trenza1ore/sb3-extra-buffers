@@ -57,7 +57,7 @@ def eval_model(n_eps: int, eval_env: VecEnv, eval_model: BaseAlgorithm, close_en
             for i in reshape_iter:
                 j = i * buffer_n_envs
                 k = j + buffer_n_envs
-                b.add(obs[j:k, 3:4, ...], new_obs[j:k, 3:4, ...], action[j:k], reward[j:k], done[j:k], info[j:k])
+                b.add(obs[j:k, :, ...], new_obs[j:k, :, ...], action[j:k], reward[j:k], done[j:k], info[j:k])
             buffer_latency[b_idx] += time.time() - t
 
         obs = new_obs
