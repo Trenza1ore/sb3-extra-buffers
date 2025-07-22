@@ -43,12 +43,12 @@ class BaseCompressedBuffer:
         if compression_method == "igzip" and not has_igzip():
             warnings.warn("Failed to initialize igzip, falls back to gzip backend. "
                           "If you want to use igzip, consider installing the python-isal library via:\n"
-                          "pip install \"sb3-extra-buffers[isal]\"")
+                          "pip install \"sb3-extra-buffers[isal]\"", category=ImportWarning)
             compression_method = "gzip"
         if compression_method.endswith("-jit") and not has_numba():
             warnings.warn("Failed to initialize Numba for jit compiler, falls back to NumPy backend. "
                           "If you want to use jit version, consider installing the Numba library via:\n"
-                          "pip install \"sb3-extra-buffers[numba]\"")
+                          "pip install \"sb3-extra-buffers[numba]\"", category=ImportWarning)
             compression_method = compression_method.removesuffix("-jit")
         # Get the actual compression methods
         assert compression_method in COMPRESSION_METHOD_MAP, f"Unknown compression method {compression_method}"
