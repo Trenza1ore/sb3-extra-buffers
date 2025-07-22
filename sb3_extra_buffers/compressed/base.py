@@ -35,20 +35,21 @@ class BaseCompressedBuffer:
         if compression_method is None:
             return
         if compression_method[-1].isdigit():
-            re_match = re.search(r"(\w+?)([0-9]+)", compression_method)
+            re_match = re.search(r"^((?:[A-Za-z]+)|(?:[\w\-]+/))(\-?[0-9]+)$", compression_method)
             assert re_match, f"Invalid compression shorthand: {compression_method}"
-            compression_method = re_match.group(1)
+            compression_method = re_match.group(1).removesuffix("/")
             compression_kwargs["compresslevel"] = int(re_match.group(2))
         # Warn user about optional dependncies missing
         if compression_method == "igzip" and not has_igzip():
             warnings.warn("Failed to initialize igzip, falls back to gzip backend. "
                           "If you want to use igzip, consider installing the python-isal library via:\n"
                           "pip install \"sb3-extra-buffers[isal]\"")
+            compression_method = "gzip"
         if compression_method.endswith("-jit") and not has_numba():
             warnings.warn("Failed to initialize Numba for jit compiler, falls back to NumPy backend. "
                           "If you want to use jit version, consider installing the Numba library via:\n"
                           "pip install \"sb3-extra-buffers[numba]\"")
-            compression_method.removesuffix("-jit")
+            compression_method = compression_method.removesuffix("-jit")
         # Get the actual compression methods
         assert compression_method in COMPRESSION_METHOD_MAP, f"Unknown compression method {compression_method}"
         self._compress = partial(COMPRESSION_METHOD_MAP[compression_method].compress, **compression_kwargs)

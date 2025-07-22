@@ -1,16 +1,20 @@
 from collections import namedtuple
 import gzip
 import numpy as np
+from sb3_extra_buffers import logger
 from sb3_extra_buffers.compressed.utils import find_smallest_dtype
 
 HAS_IGZIP: bool = False
 HAS_NUMBA: bool = False
+HAS_ZSTD: bool = False
+HAS_LZ4: bool = False
 
 try:
     import isal.igzip as igzip
     HAS_IGZIP: bool = True
 except ImportError:
     igzip = gzip
+    logger.warning("Compression extension not installed: isal (isal.igzip)")
 
 CompressionMethods = namedtuple("CompressionMethod", ["compress", "decompress"])
 
@@ -118,17 +122,48 @@ def has_igzip() -> bool:
     return HAS_IGZIP
 
 
+def has_zstd() -> bool:
+    return HAS_ZSTD
+
+
+def has_lz4() -> bool:
+    return HAS_LZ4
+
+
+COMPRESSION_METHOD_MAP: dict[str, CompressionMethods] = {
+    "none": CompressionMethods(compress=no_compress, decompress=no_decompress),
+    "rle": CompressionMethods(compress=rle_compress, decompress=rle_numpy_decompress),
+    "rle-old": CompressionMethods(compress=rle_compress, decompress=rle_numpy_decompress_old),
+    "gzip": CompressionMethods(compress=gzip_compress, decompress=gzip_decompress),
+}
+
+if HAS_IGZIP:
+    COMPRESSION_METHOD_MAP["igzip"] = CompressionMethods(compress=igzip_compress, decompress=igzip_decompress)
+
 try:
     from sb3_extra_buffers.compressed.compression_methods.compression_methods_numba import rle_numba_decompress
     HAS_NUMBA = True
+    COMPRESSION_METHOD_MAP["rle-jit"] = CompressionMethods(compress=rle_compress, decompress=rle_numba_decompress)
 except ImportError:
-    rle_numba_decompress = rle_numpy_decompress
+    logger.warning("Compression extension not installed: numba")
 
-COMPRESSION_METHOD_MAP: dict[str, CompressionMethods] = {
-    "rle": CompressionMethods(compress=rle_compress, decompress=rle_numpy_decompress),
-    "rle-jit": CompressionMethods(compress=rle_compress, decompress=rle_numba_decompress),
-    "rle-old": CompressionMethods(compress=rle_compress, decompress=rle_numpy_decompress_old),
-    "gzip": CompressionMethods(compress=gzip_compress, decompress=gzip_decompress),
-    "igzip": CompressionMethods(compress=igzip_compress, decompress=igzip_decompress),
-    "none": CompressionMethods(compress=no_compress, decompress=no_decompress),
-}
+try:
+    from sb3_extra_buffers.compressed.compression_methods.compression_methods_zstd import zstd_compress, zstd_decompress
+    HAS_ZSTD = True
+    COMPRESSION_METHOD_MAP["zstd"] = CompressionMethods(compress=zstd_compress, decompress=zstd_decompress)
+except ImportError:
+    logger.warning("Compression extension not installed: zstd")
+
+try:
+    from sb3_extra_buffers.compressed.compression_methods.compression_methods_lz4 import (
+        lz4_frame_compress, lz4_block_compress, lz4_frame_decompress, lz4_block_decompress
+    )
+    HAS_LZ4 = True
+    COMPRESSION_METHOD_MAP["lz4-frame"] = CompressionMethods(compress=lz4_frame_compress,
+                                                             decompress=lz4_frame_decompress)
+    COMPRESSION_METHOD_MAP["lz4-block"] = CompressionMethods(compress=lz4_block_compress,
+                                                             decompress=lz4_block_decompress)
+except ImportError:
+    logger.warning("Compression extension not installed: lz4")
+
+logger.info(f"Loaded compression methods:\n{", ".join(COMPRESSION_METHOD_MAP)}")

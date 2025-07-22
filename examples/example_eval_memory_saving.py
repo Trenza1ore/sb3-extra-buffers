@@ -11,12 +11,17 @@ from sb3_extra_buffers.training_utils.buffer_warmup import eval_model
 from sb3_extra_buffers.training_utils.atari import make_env
 from examples.example_train_replay import FINAL_MODEL_PATH, ATARI_GAME, FRAMESTACK
 
-N_EVAL_EPISODES = 500
+N_EVAL_EPISODES = 125
 N_ENVS = 4
 RENDER_GAMES = False
 CLEAR_SCREEN = True
-BUFFERSIZE = 400_000
-COMPRESSION_METHODS = ["rle-jit", "igzip0", "igzip1", "igzip2", "igzip3", "gzip1", "gzip3", "gzip5", "gzip7", "gzip9"]
+BUFFERSIZE = 100_000
+COMPRESSION_METHODS = ["none", "rle",
+                       "igzip0", "igzip1", "igzip3", "gzip0", "gzip1", "gzip3",
+                       "zstd1", "zstd3", "zstd5", "zstd-1", "zstd-3", "zstd-5",
+                       "zstd10", "zstd15", "zstd22", "zstd-20", "zstd-50", "zstd-100",
+                       "lz4-frame/1", "lz4-frame/5", "lz4-frame/9", "lz4-frame/12",
+                       "lz4-block/1", "lz4-block/5", "lz4-block/9", "lz4-block/16"]
 
 if __name__ == "__main__":
     device = "mps" if th.mps.is_available() else "auto"
@@ -31,7 +36,7 @@ if __name__ == "__main__":
                          action_space=vec_env.action_space, n_envs=vec_env.num_envs,
                          optimize_memory_usage=True, handle_timeout_termination=False)
     compression_config = dict(dtypes=buffer_dtype, output_dtype="raw")
-    buffer_dict = dict(base=ReplayBuffer(**buffer_config))
+    buffer_dict = dict(baseline=ReplayBuffer(**buffer_config))
     buffer_dict.update({
         compression_method: CompressedReplayBuffer(
             compression_method=compression_method, **buffer_config, **compression_config
@@ -51,21 +56,44 @@ if __name__ == "__main__":
     print(f"Q1: {Q1:4d} | Q2: {Q2:4d} | Q3: {Q3:4d} | Relative IQR: {relative_IQR:4.2f}", end=" | ")
     print(f"Min: {reward_min} | Max: {reward_max}")
 
-    base_size = 1
+    base_size = -1
+    sort_dict = dict()
     save_dir = f"debug_obs/size_eval/{ATARI_GAME}"
     os.makedirs(save_dir, exist_ok=True)
-    for (k, v), l in zip(buffer_dict.items(), buffer_latency):
-        size = sys.getsizeof(v.observations)
+    for (k, v), l in zip(list(buffer_dict.items()), buffer_latency):
+        raw_size = sys.getsizeof(v.observations)
         buffer = np.ravel(v.observations)
         if isinstance(v, CompressedReplayBuffer):
-            size += sum(sys.getsizeof(b) for b in buffer)
-            size_vs_base = size / base_size * 100
+            raw_size += sum(sys.getsizeof(b) for b in buffer)
+            size_vs_base = raw_size / base_size * 100
         else:
-            base_size = size
-            size_vs_base = 100
-        size_mb = size / 1024 / 1024
-        pos = v.pos
-        if v.full:
-            pos += v.observations.shape[0]
-        print(f"{k:7s}: {round(size_mb):6d}MB ({size_vs_base:5.1f}%) {v.full} {pos} total_latency(s): {l}")
-        np.save(f"{save_dir}/{k}.npy", buffer)
+            base_size = int(raw_size)
+            size_vs_base = 100.0
+
+        # Display the size of buffer in reasonable unit
+        size = raw_size
+        size_str = "ERRORR"
+        for size_unit in "KMGTP":
+            size /= 1024
+            if size < 1024:
+                if size < 100:
+                    size_str = f"{size:4.1f}{size_unit}B" if size > 10 else f"{size:4.2f}{size_unit}B"
+                else:
+                    size_str = f"{round(size):4d}{size_unit}B"
+                break
+
+        # Prepare content for printing
+        assert v.full, f"Buffer not filled! pos: {v.pos}"
+        pos = v.pos + v.observations.shape[0]
+        if k == "baseline":
+            print(f"{pos} steps for each env, {4*pos} steps in total.")
+        # else:
+        #     np.save(f"{save_dir}/{k.replace('/', '-')}.npy", buffer)
+        del buffer_dict[k]
+        sort_dict[f"| {k:15s} | {size_str} | {size_vs_base:5.1f}% | {l:7.1f}s |"] = l
+
+    # Print out formatted table
+    print(f"|{'Compression':^17s}|{'Memory':^8s}|{'Memory %':^8s}|{'Latency':^10s}|")
+    print(f"|{'-'*17}|{'-'*8}|{'-'*8}|{'-'*10}|")
+    for k, v in sorted(sort_dict.items(), key=lambda x: x[1]):
+        print(k)

@@ -1,7 +1,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/sb3-extra-buffers)](https://pypi.org/project/sb3-extra-buffers/) [![Pepy Total Downloads](https://img.shields.io/pepy/dt/sb3-extra-buffers)](https://pepy.tech/projects/sb3-extra-buffers) ![PyPI - License](https://img.shields.io/pypi/l/sb3-extra-buffers) ![PyPI - Implementation](https://img.shields.io/pypi/implementation/sb3-extra-buffers?style=flat)
 
 # sb3-extra-buffers
-Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to reduce memory usage drastically with minimal overhead.
+Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to reduce memory usage drastically with minimal overhead. Featured in [SB3 docs](https://stable-baselines3.readthedocs.io/en/master/misc/projects.html#sb3-extra-buffers-ram-expansions-are-overrated-just-compress-your-observations) :-)
 
 ![Banner Image](https://github.com/user-attachments/assets/e6e5cd2f-55d4-4686-abf7-773148d80ad2)
 
@@ -12,12 +12,15 @@ Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to red
 - [SBX (SB3 + JAX, uses SB3 buffers so can also benefit from compressed buffers here)](https://github.com/araffin/sbx)
 - [RL Baselines3 Zoo (training framework for SB3)](https://github.com/DLR-RM/rl-baselines3-zoo)
 
+**Description:**
+Tired of reading a cool RL paper and realizing that the author is storing a **MILLION** observations in their replay buffers? Yeah me too. This project has implemented several compressed buffer classes that replace Stable Baselines3's standard buffers like ReplayBuffer and RolloutBuffer. With as simple as 2-5 lines of extra code and **negligible overhead**, memory usage can be reduced by more than **95%**!
+
 **Main Goal:**
 Reduce the memory consumption of memory buffers in Reinforcement Learning while adding minimal overhead.
 
 **Current Progress & Available Features:**
-Memory Saving: [reported here](#memory-usage-test-for-compressed-buffers-on-mspacmannoframeskip-v4)
-See Issue https://github.com/Trenza1ore/sb3-extra-buffers/issues/1
+- Memory Saving: [reported here](#memory-usage-test-for-compressed-buffers-on-mspacmannoframeskip-v4)
+- Progress Tracker Issue: https://github.com/Trenza1ore/sb3-extra-buffers/issues/1
 
 **Motivation:**
 Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so let's try to tackle it by not storing raw frame buffers in full `np.float32` or `np.uint8` directly and find something smaller instead. For any input data that are sparse and containing large contiguous region of repeating values, lossless compression techniques can be applied to reduce memory footprint.
@@ -30,15 +33,25 @@ Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so le
 - For noisy input with a lot of variation (mostly `RGB`), using `gzip1` or `igzip0` is recommended, run-length encoding won't work as great and can potentially even increase memory usage.
 
 **Implemented Compression Methods:**
-- `rle` Vectorized Run-Length Encoding for compression.
-- `rle-jit` JIT-compiled version of `rle`, uses `numba` library.
-- `gzip` Gzip compression via `gzip`. 
-- `igzip` Intel accelerated variant via `isal.igzip`, uses `python-isal` library.
 - `none` No compression other than casting to `elem_type` and storing as `bytes`.
+- `rle` Vectorized Run-Length Encoding for compression.
+- `rle-jit` JIT-compiled version of `rle`, uses [numba](https://numba.pydata.org) library.
+- `gzip` Built-in gzip compression via `gzip`.
+- `igzip` Intel accelerated variant via `isal.igzip`, uses [python-isal](https://github.com/pycompression/python-isal) library.
+- `zstd` Zstandard compression via [python-zstd](https://github.com/sergey-dryabzhinsky/python-zstd).
+- `lz4-frame` LZ4 (frame format) compression via [python-lz4](https://github.com/python-lz4/python-lz4).
+- `lz4-block` LZ4 (block format) compression via [python-lz4](https://github.com/python-lz4/python-lz4).
 
-> - `gzip` supports `0-9` compress levels, `0` is no compression, `1` is least compression
-> - `igzip` supports `0-3` compress levels, `0` is least compression
-> - Shorthands are supported, i.e. `igzip3` = `igzip` at level `3`
+> - `gzip` supports `0~9` compression levels, `0` is no compression, `1` is least compression
+> - `igzip` supports `0~3` compression levels, `0` is least compression
+> - `zstd` supports `1~22` standard compression levels and `-100~-1` ultra-fast compression levels, `-100` is fastest and `22` is slowest.
+> - `lz4-frame` supports `0~16` standard compression levels and negative levels translates into acceleration factor.
+> - `lz4-block` supports three modes, split into positive/zero/negative compression levels. `1~12` are in `high_compression` mode and negative levels translates into acceleration factor in `fast` mode, setting `0` enables `default` mode.
+> - Shorthands are supported (for `lz4` methods including `/` is required):
+>   - `pattern` = `^((?:[A-Za-z]+)|(?:[\w\-]+/))(\-?[0-9]+)$`
+>   - `igzip3` = `igzip/3` = `igzip level 3`
+>   - `zstd-5` = `zstd/-5` = `zstd level -5`
+>   - `lz4-frame/5` = `lz4-frame level 5`
 
 ## Installation
 Install via PyPI:
@@ -49,9 +62,11 @@ Other install options:
 ```bash
 pip install "sb3-extra-buffers"          # only installs minimum requirements
 pip install "sb3-extra-buffers[extra]"   # installs extra dependencies for SB3
-pip install "sb3-extra-buffers[fast]"    # installs python-isal and numba
+pip install "sb3-extra-buffers[fast]"    # installs python-isal, numba, zstd, lz4
 pip install "sb3-extra-buffers[isal]"    # only installs python-isal
 pip install "sb3-extra-buffers[numba]"   # only installs numba
+pip install "sb3-extra-buffers[zstd]"    # only installs python-zstd
+pip install "sb3-extra-buffers[lz4]"     # only installs python-lz4
 pip install "sb3-extra-buffers[vizdoom]" # installs vizdoom
 ```
 
@@ -174,19 +189,37 @@ env = SubprocVecEnv(...)
 - **Evaluation Time**: 00:17:33 on M4 Macbook Air, using `mps` backend (out of which more than 10 minutes were spent on `gzip` alone?!).
 - **Settings**: The [example DQN model](#Example-Scripts) is loaded and evaluated using the code in [examples/example_eval_memory_saving.py](https://github.com/Trenza1ore/sb3-extra-buffers/blob/main/examples/example_eval_memory_saving.py). The exact same observations are stored into each buffer. `Latency` refers to the total number of seconds spent on adding observation to the specific buffer and `baseline` refers to using `ReplayBuffer` directly.
 
-| Compression   | Memory (MB) | Memory %  | Latency (s) |
-|----------|-------------|---------|----------------------|
-| baseline     | 10767       | 100.0%  | 3.708                |
-| rle-jit  | 2048        | 19.0%   | 14.621               |
-| igzip0   | 576         | 5.3%    | 12.372               |
-| igzip1   | 490         | 4.5%    | 21.890               |
-| igzip2   | 489         | 4.5%    | 20.515               |
-| gzip1    | 480         | 4.5%    | 41.989               |
-| gzip3    | 439         | 4.1%    | 46.568               |
-| igzip3   | 432         | 4.0%    | 35.700               |
-| gzip5    | 386         | 3.6%    | 64.545               |
-| gzip7    | 372         | 3.5%    | 117.228              |
-| gzip9    | 369         | 3.4%    | 354.114              |
+|   Compression   | Memory |Memory %|Latency |
+|-----------------|--------|--------|--------|
+| baseline        | 10.5GB | 100.0% |   5.0s |
+| none            | 2.64GB |  25.1% |   5.2s |
+| zstd-100        | 2.05GB |  19.5% |   8.1s |
+| zstd-50         | 1.65GB |  15.7% |   9.3s |
+| lz4-frame/1     |  683MB |   6.3% |   9.4s |
+| zstd-3          |  526MB |   4.9% |  12.2s |
+| zstd-5          |  611MB |   5.7% |  12.3s |
+| zstd-20         | 1.13GB |  10.7% |  12.4s |
+| igzip0          |  576MB |   5.3% |  13.0s |
+| zstd-1          |  460MB |   4.3% |  13.6s |
+| rle             | 2.00GB |  19.0% |  15.8s |
+| zstd1           |  434MB |   4.0% |  16.3s |
+| zstd3           |  410MB |   3.8% |  16.4s |
+| lz4-block/1     |  510MB |   4.7% |  20.3s |
+| igzip1          |  490MB |   4.5% |  23.0s |
+| zstd5           |  378MB |   3.5% |  26.3s |
+| gzip0           | 2.65GB |  25.2% |  29.1s |
+| lz4-block/5     |  487MB |   4.5% |  30.0s |
+| lz4-frame/5     |  494MB |   4.6% |  31.1s |
+| igzip3          |  432MB |   4.0% |  37.0s |
+| gzip1           |  481MB |   4.5% |  60.2s |
+| gzip3           |  439MB |   4.1% |  65.2s |
+| lz4-frame/9     |  483MB |   4.5% | 106.1s |
+| lz4-block/9     |  476MB |   4.4% | 106.6s |
+| zstd10          |  362MB |   3.4% | 225.5s |
+| lz4-frame/12    |  479MB |   4.5% | 230.9s |
+| lz4-block/16    |  472MB |   4.4% | 231.3s |
+| zstd15          |  326MB |   3.0% | 675.3s |
+| zstd22          |  325MB |   3.0% | 1301.2s |
 
 ---
 ## Recording Buffers

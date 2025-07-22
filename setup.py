@@ -26,7 +26,9 @@ setup(
     extras_require={
         "isal": ["isal"],
         "numba": ["numba"],
-        "fast": ["sb3_extra_buffers[isal,numba]"],
+        "zstd": ["zstd"],
+        "lz4": ["lz4"],
+        "fast": ["sb3_extra_buffers[isal,numba,zstd,lz4]"],
         "extra": ["stable_baselines3[extra]"],
         "atari": ["sb3_extra_buffers[extra]"],
         "vizdoom": ["sb3_extra_buffers[extra]", "vizdoom"],
