@@ -47,7 +47,7 @@ Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so le
 - `Color Palette` game frames from retro video games
 - `Grayscale` observations
 - `RGB (Color)` observations
-- For noisy input with a lot of variation (mostly `RGB`), using `zstd` is recommended, run-length encoding won't work as great and can potentially even increase memory usage. [See benchmark](#memory-usage-test-for-compressed-buffers-on-mspacmannoframeskip-v4).
+- For noisy input with a lot of variation (mostly `RGB`), using `zstd` is recommended, run-length encoding won't work as great and can potentially even increase memory usage. [See benchmark](#benchmark-for-compressed-buffers-on-mspacmannoframeskip-v4).
 
 **Implemented Compression Methods:**
 - `none` No compression other than casting to `elem_type` and storing as `bytes`.
