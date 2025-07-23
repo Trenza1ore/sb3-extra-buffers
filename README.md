@@ -81,7 +81,7 @@ Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so le
   - `gzip0` should be avoided, saving / loading has similar latency as `zstd-5`, but 13x bigger.
   - MsPacman at `84x84` resolution is too visually noisy for `rle` , although decompression isn't half-bad
 
-| Compression     | Save Mem | Save Mem % | Save Latency | Load Mem | Load Mem % | Load Latency (s) |
+| Compression     | Save Mem | Save Mem % | Save Latency  | Load Mem | Load Mem %  | Load Latency     |
 |-----------------|----------|------------|---------------|----------|-------------|------------------|
 | baseline        | 1.05GB   | 100.0%     | 0.9           | 4.21GB   | 100.0%      | 5.21             |
 | none            | 1.05GB   | 100.1%     | 1.2           | 1.05GB   | 25.0%       | 8.70             |
