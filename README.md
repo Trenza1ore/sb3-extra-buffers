@@ -73,8 +73,9 @@ Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so le
 ## Benchmark for Compressed Buffers (on `MsPacmanNoFrameskip-v4`)
 - **Frame Stack & Vec Envs**: both 4
 - **Buffer Size**: 40,000 (split across 4 vectorized environments)
-- **Loading Test**: Sample all trajectories from rollout buffers with batch size of 64, target device: `mps`. SB3's `RolloutBuffer` stores `np.float32` observations so it's 4x the size of `np.uint8`.
-- **Settings**: The [example DQN / PPO model](#Example-Scripts) loaded and evaluated using the code in [examples](https://github.com/Trenza1ore/sb3-extra-buffers/blob/main/examples/), DQN for saving test, PPO for loading test. The **exact same** observations are stored into each buffer for fairness. `Latency` refers to the total number of seconds spent on adding observation to the specific buffer and `baseline` refers to using `ReplayBuffer` directly.
+- **Notes**: Performed on an M4 Macbook Air, so `igzip` doesn't benefit from Intel's SIMD acceleration, also data transfer between CPU & GPU may have lower latency.
+- **Saving Test**: The [example DQN / PPO model](#Example-Scripts) loaded and evaluated using the code in [examples](https://github.com/Trenza1ore/sb3-extra-buffers/blob/main/examples/), DQN for saving test, PPO for loading test. The **exact same** observations are stored into each buffer for fairness. `Latency` refers to the total number of seconds spent on adding observation to / sampling from the specific buffer and `baseline` refers to using `ReplayBuffer` / `RolloutBuffer` directly.
+- **Loading Test**: Sample all trajectories from rollout buffers with batch size of `64`, target device: `mps`. SB3's `RolloutBuffer` stores `np.float32` observations so it's 4x the size of `np.uint8`.
 - **TLDR**:
   - `zstd` in general is very decent at save latency & memory saving, personally I recommend **`zstd-3`**.
   - `zstd-1` ~ `zstd-5` seems to be the sweet spot.
