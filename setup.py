@@ -1,5 +1,6 @@
 import os
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 with open("README.md") as f:
     long_description = f.read()
@@ -19,10 +20,7 @@ setup(
     license="MIT",
     packages=find_packages(),
     python_requires=">=3.9",
-    install_requires=[
-        "stable_baselines3",
-        "tqdm"
-    ],
+    install_requires=["stable_baselines3", "tqdm"],
     extras_require={
         "isal": ["isal"],
         "numba": ["numba"],
@@ -39,7 +37,5 @@ setup(
         "Stable-Baselines3": "https://github.com/DLR-RM/stable-baselines3",
         "Stable-Baselines3 - Contrib": "https://github.com/Stable-Baselines-Team/stable-baselines3-contrib",
     },
-    package_data={
-        "sb3_extra_buffers": ["version.txt"]
-    }
+    package_data={"sb3_extra_buffers": ["version.txt"]},
 )

@@ -1,15 +1,19 @@
+import warnings
 from typing import Generator, Optional, Union
 
-import warnings
 import numpy as np
 import torch as th
 from gymnasium import spaces
-from stable_baselines3.common.buffers import BaseBuffer, RolloutBuffer, RolloutBufferSamples, VecNormalize
+from stable_baselines3.common.buffers import (BaseBuffer, RolloutBuffer,
+                                              RolloutBufferSamples,
+                                              VecNormalize)
+
 from sb3_extra_buffers.compressed.base import BaseCompressedBuffer
 
 
 class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
     """ReplayBuffer, but compressed!"""
+
     observations: np.ndarray[object]
     actions: np.ndarray
     rewards: np.ndarray
@@ -32,10 +36,12 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         normalize_images: bool = False,
         compression_method: str = "rle",
         compression_kwargs: Optional[dict] = None,
-        decompression_kwargs: Optional[dict] = None
+        decompression_kwargs: Optional[dict] = None,
     ):
         # Avoid calling RolloutBuffer.reset which might be over-allocating memory for observations
-        BaseBuffer.__init__(self, buffer_size, observation_space, action_space, device, n_envs=n_envs)
+        BaseBuffer.__init__(
+            self, buffer_size, observation_space, action_space, device, n_envs=n_envs
+        )
         self.gae_lambda = gae_lambda
         self.gamma = gamma
         self.generator_ready = False
@@ -52,19 +58,26 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         # Compress and decompress
         self.compression_kwargs = compression_kwargs or self.dtypes
         self.decompression_kwargs = decompression_kwargs or self.dtypes
-        BaseCompressedBuffer.__init__(self, compression_method=compression_method,
-                                      compression_kwargs=self.compression_kwargs,
-                                      decompression_kwargs=self.decompression_kwargs,
-                                      flatten_config=self.flatten_config)
+        BaseCompressedBuffer.__init__(
+            self,
+            compression_method=compression_method,
+            compression_kwargs=self.compression_kwargs,
+            decompression_kwargs=self.decompression_kwargs,
+            flatten_config=self.flatten_config,
+        )
         self.reset()
 
     def reset(self) -> None:
         self.observations = np.empty((self.buffer_size, self.n_envs), dtype=object)
 
-        self.actions = np.zeros((self.buffer_size, self.n_envs, self.action_dim), dtype=np.float32)
+        self.actions = np.zeros(
+            (self.buffer_size, self.n_envs, self.action_dim), dtype=np.float32
+        )
         self.rewards = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.returns = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
-        self.episode_starts = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.episode_starts = np.zeros(
+            (self.buffer_size, self.n_envs), dtype=np.float32
+        )
         self.values = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.log_probs = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.advantages = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
@@ -108,12 +121,19 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         elem_min, elem_max = elem_type_info.min, elem_type_info.max
 
         if isinstance(obs, th.Tensor):
-            obs = th.clamp(obs, elem_min, elem_max).cpu().numpy().astype(elem_type, casting="unsafe")
+            obs = (
+                th.clamp(obs, elem_min, elem_max)
+                .cpu()
+                .numpy()
+                .astype(elem_type, casting="unsafe")
+            )
         else:
             obs = np.clip(obs, elem_min, elem_max, dtype=elem_type, casting="unsafe")
 
         # Compress everything
-        self.observations[self.pos] = [self._compress(env_obs.ravel()) for env_obs in obs]
+        self.observations[self.pos] = [
+            self._compress(env_obs.ravel()) for env_obs in obs
+        ]
 
         self.actions[self.pos] = np.array(action)
         self.rewards[self.pos] = np.array(reward)
@@ -124,7 +144,9 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         if self.pos == self.buffer_size:
             self.full = True
 
-    def get(self, batch_size: Optional[int] = None) -> Generator[RolloutBufferSamples, None, None]:
+    def get(
+        self, batch_size: Optional[int] = None
+    ) -> Generator[RolloutBufferSamples, None, None]:
         assert self.full, ""
         indices = np.random.permutation(self.buffer_size * self.n_envs)
         # Prepare the data
@@ -148,7 +170,7 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
 
         start_idx = 0
         while start_idx < self.buffer_size * self.n_envs:
-            yield self._get_samples(indices[start_idx: start_idx + batch_size])
+            yield self._get_samples(indices[start_idx : start_idx + batch_size])
             start_idx += batch_size
 
     def _get_samples(
@@ -157,8 +179,11 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         env: Optional[VecNormalize] = None,
     ) -> RolloutBufferSamples:
         with warnings.catch_warnings():
-            warnings.filterwarnings(action="ignore", message="The given NumPy array is not writable.*",
-                                    category=UserWarning)
+            warnings.filterwarnings(
+                action="ignore",
+                message="The given NumPy array is not writable.*",
+                category=UserWarning,
+            )
             obs = th.stack([self.reconstruct_obs(i) for i in batch_inds])
         if self.normalize_images:
             obs /= 255.0

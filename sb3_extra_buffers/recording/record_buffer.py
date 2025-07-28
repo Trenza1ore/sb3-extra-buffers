@@ -4,8 +4,13 @@ import numpy as np
 
 
 class RecordBuffer:
-    def __init__(self, res: tuple[int, int] = (240, 320), ch_num: int = 3, size: int = 40000,
-                 dtypes: Optional[list[np.dtype]] = None):
+    def __init__(
+        self,
+        res: tuple[int, int] = (240, 320),
+        ch_num: int = 3,
+        size: int = 40000,
+        dtypes: Optional[list[np.dtype]] = None,
+    ):
         """A class for recording game states.
 
         Args:
@@ -22,19 +27,25 @@ class RecordBuffer:
             dtypes = [np.uint8, np.float32]
         self.dtype = {
             "frame": (dtypes[0], (size, ch_num, *res)),
-            "reward": (dtypes[1], (size, ))
+            "reward": (dtypes[1], (size,)),
         }
 
         if len(dtypes) > 2:
-            self.dtype["features"] = (*dtypes[2:], )
+            self.dtype["features"] = (*dtypes[2:],)
             self.feature_num = len(self.dtype["features"])
             self.use_features = True
             if len(set(self.dtype["features"])) == 1:
-                self.features = np.zeros((size, self.feature_num), dtype=self.dtype["features"][0])
+                self.features = np.zeros(
+                    (size, self.feature_num), dtype=self.dtype["features"][0]
+                )
             else:
-                self.features = np.zeros(size, dtype=[
-                    (str(i), self.dtype["features"][i]) for i in range(self.feature_num)
-                ])
+                self.features = np.zeros(
+                    size,
+                    dtype=[
+                        (str(i), self.dtype["features"][i])
+                        for i in range(self.feature_num)
+                    ],
+                )
         else:
             self.feature_num = 0
             self.use_features = False
@@ -56,7 +67,13 @@ class RecordBuffer:
         return self.__str__()
 
     # add is replaced by add_filled after the memory has been filled once
-    def add(self, frame: np.ndarray[np.integer], reward: np.floating, action: np.uint8, features: tuple = None):
+    def add(
+        self,
+        frame: np.ndarray[np.integer],
+        reward: np.floating,
+        action: np.uint8,
+        features: tuple = None,
+    ):
         """Add a single state into memory"""
         if self._ptr < self.max_index:
             self._ptr += 1
@@ -69,7 +86,13 @@ class RecordBuffer:
         if self.use_features:
             self.features[self._ptr] = features
 
-    def add_filled(self, frame: np.ndarray[np.integer], reward: np.floating, action: np.uint8, features: tuple):
+    def add_filled(
+        self,
+        frame: np.ndarray[np.integer],
+        reward: np.floating,
+        action: np.uint8,
+        features: tuple,
+    ):
         """Add a single state into memory"""
         self._ptr = self._ptr + 1 if self._ptr < self.max_index else 0
         self.frames[self._ptr, :, :, :] = frame.transpose(2, 0, 1)

@@ -1,12 +1,14 @@
-from typing import Union, Iterable, get_args
-from sb3_extra_buffers import ReplayLike, NumberType
-
 import gc
 import time
+from typing import Iterable, Union, get_args
+
 import numpy as np
 import torch as th
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.vec_env import VecEnv
+
+from sb3_extra_buffers import NumberType, ReplayLike
+
 try:
     from tqdm.rich import tqdm
 except ImportError:
@@ -15,14 +17,21 @@ except ImportError:
 
 def process_outcome(infos: list[dict]) -> tuple[np.ndarray[float], np.ndarray[bool]]:
     nan = float("nan")
-    reward = np.asarray([info.get("episode", {}).get("r", nan) for info in infos], dtype=float)
+    reward = np.asarray(
+        [info.get("episode", {}).get("r", nan) for info in infos], dtype=float
+    )
     done = np.zeros_like(reward, dtype="?")
     done[np.isfinite(reward)] = True
     return reward, done
 
 
-def eval_model(n_eps: int, eval_env: VecEnv, eval_model: BaseAlgorithm, close_env: bool = True,
-               buffer: Union[ReplayLike, Iterable[ReplayLike], None] = None) -> tuple[list[NumberType], list]:
+def eval_model(
+    n_eps: int,
+    eval_env: VecEnv,
+    eval_model: BaseAlgorithm,
+    close_env: bool = True,
+    buffer: Union[ReplayLike, Iterable[ReplayLike], None] = None,
+) -> tuple[list[NumberType], list]:
     if not (isinstance(buffer, Iterable) or (buffer is None)):
         buffer = [buffer]
     buffer_latency = [0.0] * len(buffer)
@@ -37,7 +46,7 @@ def eval_model(n_eps: int, eval_env: VecEnv, eval_model: BaseAlgorithm, close_en
     reshape_factor = eval_n_envs // buffer_n_envs
     reshape_iter = list(range(reshape_factor))
 
-    done = np.zeros(eval_n_envs, dtype='?')
+    done = np.zeros(eval_n_envs, dtype="?")
     obs = eval_env.reset()
     eps_rewards = []
 
@@ -59,7 +68,14 @@ def eval_model(n_eps: int, eval_env: VecEnv, eval_model: BaseAlgorithm, close_en
             for i in reshape_iter:
                 j = i * buffer_n_envs
                 k = j + buffer_n_envs
-                b.add(obs[j:k, :, ...], new_obs[j:k, :, ...], action[j:k], reward[j:k], done[j:k], info[j:k])
+                b.add(
+                    obs[j:k, :, ...],
+                    new_obs[j:k, :, ...],
+                    action[j:k],
+                    reward[j:k],
+                    done[j:k],
+                    info[j:k],
+                )
             buffer_latency[b_idx] += time.time() - t
 
         obs = new_obs
@@ -76,7 +92,9 @@ def eval_model(n_eps: int, eval_env: VecEnv, eval_model: BaseAlgorithm, close_en
         try:
             getattr(th, eval_device_type).empty_cache()
         except Exception as e:
-            print(f"Failed to clean cache by calling torch.{eval_device_type}.empty_cache(): {e}")
+            print(
+                f"Failed to clean cache by calling torch.{eval_device_type}.empty_cache(): {e}"
+            )
 
     # Garbage collection
     pbar.set_description_str("Garbage collection")

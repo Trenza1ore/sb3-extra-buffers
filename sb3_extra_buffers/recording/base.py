@@ -5,6 +5,7 @@ import numpy as np
 
 class DummyArray:
     """A dummy array with NumPy-like interfaces"""
+
     def __setitem__(self, *args, **kwargs) -> None:
         return None
 
@@ -17,6 +18,7 @@ class DummyArray:
 
 class BaseRecordBuffer:
     """For type-checking"""
+
     frames: Union[np.ndarray, DummyArray]
     features: Union[np.ndarray, DummyArray]
     rewards: Union[np.ndarray, DummyArray]

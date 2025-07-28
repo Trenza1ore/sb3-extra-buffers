@@ -1,13 +1,15 @@
-from typing import Optional, Union, Any, Literal
-
 from threading import Lock
+from typing import Any, Literal, Optional, Union
+
 import numpy as np
+
 from sb3_extra_buffers.compressed.base import BaseCompressedBuffer
 from sb3_extra_buffers.compressed.utils import find_smallest_dtype
 
 
 class CompressedArray(np.ndarray, BaseCompressedBuffer):
     """Experimental Compressed Array Class"""
+
     def __init__(
         self,
         shape: Union[int, tuple, Any],
@@ -28,16 +30,21 @@ class CompressedArray(np.ndarray, BaseCompressedBuffer):
         self.flatten_config = dict(shape=flatten_len, dtype=dtype)
 
         # Handle dtypes
-        self.dtypes = dtypes or dict(elem_type=dtype, runs_type=find_smallest_dtype(flatten_len))
+        self.dtypes = dtypes or dict(
+            elem_type=dtype, runs_type=find_smallest_dtype(flatten_len)
+        )
         self._dtype = dtype
 
         # Compress and decompress
         self.compression_kwargs = compression_kwargs or self.dtypes
         self.decompression_kwargs = decompression_kwargs or self.dtypes
-        BaseCompressedBuffer.__init__(self, compression_method=compression_method,
-                                      compression_kwargs=self.compression_kwargs,
-                                      decompression_kwargs=self.decompression_kwargs,
-                                      flatten_config=self.flatten_config)
+        BaseCompressedBuffer.__init__(
+            self,
+            compression_method=compression_method,
+            compression_kwargs=self.compression_kwargs,
+            decompression_kwargs=self.decompression_kwargs,
+            flatten_config=self.flatten_config,
+        )
         self._suppress_get_item = False
         self._thread_lock = Lock()
 
@@ -56,8 +63,15 @@ class CompressedArray(np.ndarray, BaseCompressedBuffer):
         decompression_kwargs: Optional[dict] = None,
         **kwargs
     ):
-        self = super().__new__(cls, shape=shape, dtype=object, buffer=buffer,
-                               offset=offset, strides=strides, order=order)
+        self = super().__new__(
+            cls,
+            shape=shape,
+            dtype=object,
+            buffer=buffer,
+            offset=offset,
+            strides=strides,
+            order=order,
+        )
         return self
 
     def __array_finalize__(self, obj):
@@ -66,8 +80,17 @@ class CompressedArray(np.ndarray, BaseCompressedBuffer):
         super().__array_finalize__(obj)
         self._suppress_get_item = False
         self._thread_lock = Lock()
-        for attr in ["flatten_config", "compression_kwargs", "decompression_kwargs", "version",
-                     "obs_shape", "dtypes", "_dtype", "_compress", "_decompress"]:
+        for attr in [
+            "flatten_config",
+            "compression_kwargs",
+            "decompression_kwargs",
+            "version",
+            "obs_shape",
+            "dtypes",
+            "_dtype",
+            "_compress",
+            "_decompress",
+        ]:
             setattr(self, attr, getattr(obj, attr))
 
     def __setitem__(self, index, value):
