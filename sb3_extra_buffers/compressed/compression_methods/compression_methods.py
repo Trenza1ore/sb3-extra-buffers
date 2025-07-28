@@ -23,11 +23,8 @@ def rle_compress(arr: np.ndarray, elem_type: np.dtype = np.uint8, runs_type: np.
     """RLE Compression, credits:
     https://stackoverflow.com/questions/1066758/find-length-of-sequences-of-identical-values-in-a-numpy-array-run-length-encodi/32681075#32681075
     """
-    n = len(arr)
-    if n == 0:
-        return None
-    else:
-        y = arr[1:] != arr[:-1]
+    n = arr.shape[0]
+    y = arr[1:] != arr[:-1]
     idx_arr = np.append(np.where(y), n - 1)
     runs = np.diff(np.append(-1, idx_arr))
     return runs.astype(runs_type, copy=False).tobytes() + arr[idx_arr].astype(elem_type, copy=False).tobytes()
