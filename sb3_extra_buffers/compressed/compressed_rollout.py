@@ -12,7 +12,7 @@ from sb3_extra_buffers.compressed.base import BaseCompressedBuffer
 
 
 class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
-    """ReplayBuffer, but compressed!"""
+    """RolloutBuffer, but compressed!"""
 
     observations: np.ndarray[object]
     actions: np.ndarray
@@ -71,7 +71,8 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         self.observations = np.empty((self.buffer_size, self.n_envs), dtype=object)
 
         self.actions = np.zeros(
-            (self.buffer_size, self.n_envs, self.action_dim), dtype=np.float32
+            (self.buffer_size, self.n_envs, self.action_dim),
+            dtype=self.action_space.dtype,
         )
         self.rewards = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.returns = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
@@ -188,7 +189,7 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         if self.normalize_images:
             obs /= 255.0
         data = (
-            self.actions[batch_inds],
+            self.actions[batch_inds].astype(np.float32, copy=False),
             self.values[batch_inds].ravel(),
             self.log_probs[batch_inds].ravel(),
             self.advantages[batch_inds].ravel(),
@@ -199,3 +200,44 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
     def reconstruct_obs(self, idx: int):
         obs = self._decompress(self.observations[idx, 0]).reshape(self.obs_shape)
         return th.from_numpy(obs).to(self.device, th.float32)
+
+
+class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
+    """DictRolloutBuffer, but compressed!"""
+
+    observation_space: spaces.Dict
+    obs_shape: dict[str, tuple[int, ...]]  # type: ignore[assignment]
+    observations: dict[str, np.ndarray]  # type: ignore[assignment]
+
+    def __init__(
+        self,
+        buffer_size: int,
+        observation_space: spaces.Dict,
+        action_space: spaces.Space,
+        device: Union[th.device, str] = "auto",
+        gae_lambda: float = 1,
+        gamma: float = 0.99,
+        n_envs: int = 1,
+    ):
+        raise NotImplementedError("Not yet implemented")
+
+    def reset(self) -> None:
+        self.observations = {}
+        for key in self.obs_shape:
+            self.observations[key] = np.empty(
+                (self.buffer_size, self.n_envs), dtype=object
+            )
+        self.actions = np.zeros(
+            (self.buffer_size, self.n_envs, self.action_dim),
+            dtype=self.action_space.dtype,
+        )
+        self.rewards = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.returns = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.episode_starts = np.zeros(
+            (self.buffer_size, self.n_envs), dtype=np.float32
+        )
+        self.values = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.log_probs = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.advantages = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.generator_ready = False
+        super(CompressedRolloutBuffer, self).reset()
