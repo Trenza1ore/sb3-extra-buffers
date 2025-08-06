@@ -208,4 +208,4 @@ try:
 except ImportError:
     logger.warning("Compression extension not installed: lz4")
 
-logger.info(f"Loaded compression methods:\n{", ".join(COMPRESSION_METHOD_MAP)}")
+logger.info(f"Loaded compression methods:\n{', '.join(COMPRESSION_METHOD_MAP)}")

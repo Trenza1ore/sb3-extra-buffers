@@ -61,7 +61,7 @@ class RecordBuffer:
         return self._ptr + 1
 
     def __str__(self) -> str:
-        return f"ReplayMemory(f:{self.dtype["frame"]}, r:{self.dtype["reward"]})"
+        return f"ReplayMemory(f:{self.dtype['frame']}, r:{self.dtype['reward']})"
 
     def __repr__(self) -> str:
         return self.__str__()
