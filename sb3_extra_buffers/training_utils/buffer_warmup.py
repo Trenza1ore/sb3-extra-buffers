@@ -3,8 +3,8 @@ from typing import Iterable, Optional, Union
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.vec_env import VecEnv
 
-from sb3_extra_buffers import NumberType, ReplayLike
 from sb3_extra_buffers.training_utils.eval_model import eval_model
+from sb3_extra_buffers.types import NumberType, ReplayLike
 
 
 def warm_up(
