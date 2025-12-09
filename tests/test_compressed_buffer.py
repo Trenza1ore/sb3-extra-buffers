@@ -24,14 +24,28 @@ def _parse_sb3_version():
     parts = sb3_version.split('.')
     # Take first three components
     version_parts = parts[:3]
-    # For the patch version, split by non-numeric characters and take first part
+    # For the patch version, extract only leading numeric characters
     if len(version_parts) >= 3:
-        patch_parts = ''.join(c if c.isdigit() else ' ' for c in version_parts[2]).split()
-        version_parts[2] = patch_parts[0] if patch_parts else '0'
+        patch_str = version_parts[2]
+        # Extract leading numeric characters only (stops at first non-digit)
+        numeric_part = ''
+        for c in patch_str:
+            if c.isdigit():
+                numeric_part += c
+            else:
+                break
+        version_parts[2] = numeric_part if numeric_part else '0'
     # Pad with zeros if needed
     while len(version_parts) < 3:
         version_parts.append('0')
-    return tuple(int(p) for p in version_parts)
+    # Convert to integers, defaulting to 0 for non-numeric parts
+    result = []
+    for p in version_parts:
+        try:
+            result.append(int(p))
+        except ValueError:
+            result.append(0)
+    return tuple(result)
 
 
 # Parse version once at module level
