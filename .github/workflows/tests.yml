@@ -31,5 +31,7 @@ jobs:
         pip install -e .[fast,extra]
     
     - name: Run tests
+      env:
+        DISABLE_TEST_OBSERVATIONS_SAVE: "true"
       run: |
         pytest tests/ -v
