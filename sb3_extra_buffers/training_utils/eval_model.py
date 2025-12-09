@@ -7,7 +7,7 @@ import torch as th
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.vec_env import VecEnv
 
-from sb3_extra_buffers import NumberType, ReplayLike
+from sb3_extra_buffers import NumberType, ReplayLike, logger
 
 try:
     from tqdm.rich import tqdm
@@ -92,7 +92,7 @@ def eval_model(
         try:
             getattr(th, eval_device_type).empty_cache()
         except Exception as e:
-            print(
+            logger.warning(
                 f"Failed to clean cache by calling torch.{eval_device_type}.empty_cache(): {e}"
             )
 
