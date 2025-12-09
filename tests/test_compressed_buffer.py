@@ -15,8 +15,12 @@ from sb3_extra_buffers.training_utils.atari import make_env
 ENV_TO_TEST = ["MsPacmanNoFrameskip-v4", "PongNoFrameskip-v4"]
 
 
-def parse_sb3_version():
-    """Parse SB3 version and return (major, minor, patch) as integers."""
+def _parse_sb3_version():
+    """Parse SB3 version and return (major, minor, patch) as integers.
+    
+    Parses version strings like '2.7.1', '2.7.1a0', '2.7.1rc1' into (major, minor, patch).
+    For pre-release versions, only the numeric part of the patch is extracted.
+    """
     parts = sb3_version.split('.')
     # Take first three components
     version_parts = parts[:3]
@@ -30,10 +34,13 @@ def parse_sb3_version():
     return tuple(int(p) for p in version_parts)
 
 
+# Parse version once at module level
+SB3_VERSION_TUPLE = _parse_sb3_version()
+
+
 def is_sb3_version_gte(target_version):
     """Check if current SB3 version is >= target version (major, minor, patch)."""
-    current = parse_sb3_version()
-    return current >= target_version
+    return SB3_VERSION_TUPLE >= target_version
 
 
 def get_tests():
