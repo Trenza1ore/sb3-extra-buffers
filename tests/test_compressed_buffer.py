@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pytest
 import torch
-from stable_baselines3 import DQN, PPO
+from stable_baselines3 import DQN, PPO, __version__ as sb3_version
 from stable_baselines3.common.buffers import ReplayBuffer, RolloutBuffer
 from stable_baselines3.common.vec_env import DummyVecEnv
 
@@ -13,6 +13,27 @@ from sb3_extra_buffers.compressed import (CompressedReplayBuffer,
 from sb3_extra_buffers.training_utils.atari import make_env
 
 ENV_TO_TEST = ["MsPacmanNoFrameskip-v4", "PongNoFrameskip-v4"]
+
+
+def parse_sb3_version():
+    """Parse SB3 version and return (major, minor, patch) as integers."""
+    parts = sb3_version.split('.')
+    # Take first three components
+    version_parts = parts[:3]
+    # For the patch version, split by non-numeric characters and take first part
+    if len(version_parts) >= 3:
+        patch_parts = ''.join(c if c.isdigit() else ' ' for c in version_parts[2]).split()
+        version_parts[2] = patch_parts[0] if patch_parts else '0'
+    # Pad with zeros if needed
+    while len(version_parts) < 3:
+        version_parts.append('0')
+    return tuple(int(p) for p in version_parts)
+
+
+def is_sb3_version_gte(target_version):
+    """Check if current SB3 version is >= target version (major, minor, patch)."""
+    current = parse_sb3_version()
+    return current >= target_version
 
 
 def get_tests():
@@ -86,7 +107,9 @@ def compressed_buffer_test(
         model_class = PPO
         extra_args = dict(n_steps=384)
         expected_dtype = np.float32
-        uncompressed_dtype = expected_dtype
+        # SB3 2.7.1 fixed rollout buffer's observation storage datatype
+        # For backwards compatibility, use obs.dtype for 2.7.1+ and expected_dtype for older versions
+        uncompressed_dtype = obs.dtype if is_sb3_version_gte((2, 7, 1)) else expected_dtype
     else:
         raise NotImplementedError(f"What is {buffer_type}?")
     if compression_method == "none":
