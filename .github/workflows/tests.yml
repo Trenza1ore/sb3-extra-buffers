@@ -32,6 +32,6 @@ jobs:
     
     - name: Run tests
       env:
-        SAVE_TEST_OBSERVATIONS: "false"
+        DISABLE_TEST_OBSERVATIONS_SAVE: "true"
       run: |
         pytest tests/ -v

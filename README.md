@@ -209,12 +209,11 @@ pytest tests -n auto -v --durations=0 --tb=short
 ```
 
 **Saving Test Observations:**
-By default, test observations are not saved to disk during testing. To enable saving observations to `debug_obs/` for manual inspection during local development, set the `SAVE_TEST_OBSERVATIONS` environment variable:
+By default, test observations are saved to `debug_obs/` for manual inspection during testing. To disable saving observations (e.g., in CI/CD to avoid unnecessary disk I/O), set the `DISABLE_TEST_OBSERVATIONS_SAVE` environment variable:
 ```bash
-# Enable saving test observations
-SAVE_TEST_OBSERVATIONS=true pytest tests -v
+# Disable saving test observations (e.g., for CI/CD)
+DISABLE_TEST_OBSERVATIONS_SAVE=true pytest tests -v
 ```
-This feature is disabled in CI/CD to avoid unnecessary disk I/O and storage usage.
 ---
 ## Compressed Buffers
 Defined in `sb3_extra_buffers.compressed`
