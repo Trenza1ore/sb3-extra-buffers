@@ -7,7 +7,8 @@ import torch as th
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.vec_env import VecEnv
 
-from sb3_extra_buffers import NumberType, ReplayLike, logger
+from sb3_extra_buffers import NumberType, ReplayLike
+from sb3_extra_buffers.logging import logger
 
 try:
     from tqdm.rich import tqdm

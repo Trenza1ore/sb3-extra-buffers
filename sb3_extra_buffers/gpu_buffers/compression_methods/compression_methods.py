@@ -3,9 +3,9 @@ from collections import namedtuple
 import numpy as np
 import torch as th
 
-from sb3_extra_buffers import logger
 from sb3_extra_buffers.gpu_buffers.raw_buffer import RawBuffer
 from sb3_extra_buffers.gpu_buffers.utils import find_smallest_dtype
+from sb3_extra_buffers.logging import logger
 
 CompressionMethods = namedtuple("CompressionMethod", ["compress", "decompress"])
 

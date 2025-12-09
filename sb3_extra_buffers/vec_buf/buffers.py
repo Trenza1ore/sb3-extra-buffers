@@ -6,7 +6,7 @@ import torch as th
 from gymnasium import spaces
 from stable_baselines3.common.buffers import BaseBuffer, RolloutBuffer
 
-from sb3_extra_buffers import logger
+from sb3_extra_buffers.logging import logger
 
 
 class DummyVecRolloutBuffer(RolloutBuffer):
