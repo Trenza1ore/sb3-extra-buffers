@@ -18,26 +18,19 @@ ENV_TO_TEST = ["MsPacmanNoFrameskip-v4", "PongNoFrameskip-v4"]
 def _parse_sb3_version():
     """Parse SB3 version and return (major, minor, patch) as integers.
     
-    Parses version strings like '2.7.1', '2.7.1a0', '2.7.1rc1' into (major, minor, patch).
+    Parses version strings like "2.7.1", "2.7.1a0", "2.7.1rc1" into (major, minor, patch).
     For pre-release versions, only the numeric part of the patch is extracted.
     """
-    parts = sb3_version.split('.')
+    parts = sb3_version.split(".")
     # Take first three components
     version_parts = parts[:3]
-    # For the patch version, extract only leading numeric characters
+    # For the patch version, split by non-numeric characters and take first part
     if len(version_parts) >= 3:
-        patch_str = version_parts[2]
-        # Extract leading numeric characters only (stops at first non-digit)
-        numeric_part = ''
-        for c in patch_str:
-            if c.isdigit():
-                numeric_part += c
-            else:
-                break
-        version_parts[2] = numeric_part if numeric_part else '0'
+        patch_parts = "".join(c if c.isdigit() else " " for c in version_parts[2]).split()
+        version_parts[2] = patch_parts[0] if patch_parts else "0"
     # Pad with zeros if needed
     while len(version_parts) < 3:
-        version_parts.append('0')
+        version_parts.append("0")
     # Convert to integers, defaulting to 0 for non-numeric parts
     result = []
     for p in version_parts:
