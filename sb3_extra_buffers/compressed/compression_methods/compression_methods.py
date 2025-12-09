@@ -3,8 +3,8 @@ from collections import namedtuple
 
 import numpy as np
 
-from sb3_extra_buffers import logger
 from sb3_extra_buffers.compressed.utils import find_smallest_dtype
+from sb3_extra_buffers.logging import logger
 
 HAS_IGZIP: bool = False
 HAS_NUMBA: bool = False
