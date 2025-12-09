@@ -216,6 +216,7 @@ __marimo__/
 *.ipynb
 *.zip
 test*.py
+debug_obs/
 
 # Pytest
 !tests/*.py

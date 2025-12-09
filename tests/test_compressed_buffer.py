@@ -119,10 +119,11 @@ def compressed_buffer_test(
         last_obs.dtype == expected_dtype
     ), f"Expected {expected_dtype} observations, got {last_obs.dtype}"
 
-    # Dump to disk for manual inspection
-    dump_dir = f"debug_obs/{buffer_type}"
-    os.makedirs(dump_dir, exist_ok=True)
-    save_path = f"{dump_dir}/{env_id.split('/')[-1]}_{compression_method}_{n_envs}_{n_stack}.npy"
-    if os.path.exists(save_path):
-        os.remove(save_path)
-    np.save(save_path, last_obs)
+    # Dump to disk for manual inspection (disabled in CI by default)
+    if os.environ.get("SAVE_TEST_OBSERVATIONS", "false").lower() in ("true", "1", "yes"):
+        dump_dir = f"debug_obs/{buffer_type}"
+        os.makedirs(dump_dir, exist_ok=True)
+        save_path = f"{dump_dir}/{env_id.split('/')[-1]}_{compression_method}_{n_envs}_{n_stack}.npy"
+        if os.path.exists(save_path):
+            os.remove(save_path)
+        np.save(save_path, last_obs)
