@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sb3_extra_buffers"
+dynamic = ["version"]
+description = "Extra buffer classes for Stable-Baselines3, reduce memory usage with minimal overhead."
+readme = "README.md"
+license = "MIT"
+authors = [
+    {name = "Hugo (Jin Huang)", email = "SushiNinja123@outlook.com"}
+]
+requires-python = ">=3.9"
+dependencies = [
+    "stable_baselines3",
+    "tqdm",
+]
+keywords = ["reinforcement-learning", "stable-baselines3", "compression", "memory-optimization"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.optional-dependencies]
+isal = ["isal"]
+numba = ["numba"]
+zstd = ["zstd"]
+lz4 = ["lz4"]
+fast = ["isal", "numba", "zstd", "lz4"]
+extra = ["stable_baselines3[extra]"]
+atari = ["stable_baselines3[extra]"]
+vizdoom = ["stable_baselines3[extra]", "vizdoom"]
+
+[project.urls]
+Homepage = "https://github.com/Trenza1ore/sb3-extra-buffers"
+"Source Code" = "https://github.com/Trenza1ore/sb3-extra-buffers"
+"Stable-Baselines3" = "https://github.com/DLR-RM/stable-baselines3"
+"Stable-Baselines3 - Contrib" = "https://github.com/Stable-Baselines-Team/stable-baselines3-contrib"
+
+[tool.setuptools]
+packages = {find = {}}
+
+[tool.setuptools.dynamic]
+version = {file = "sb3_extra_buffers/version.txt"}
+
+[tool.setuptools.package-data]
+sb3_extra_buffers = ["version.txt", "py.typed"]
