@@ -5,8 +5,8 @@ Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to red
 
 ![Banner Image](https://github.com/user-attachments/assets/e6e5cd2f-55d4-4686-abf7-773148d80ad2)
 
-
 **Links:**
+- [My Master's Thesis (which started this as a side project)](https://arxiv.org/abs/2511.11703)
 - [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3)
 - [SB3 Contrib (experimental features for SB3)](https://github.com/Stable-Baselines-Team/stable-baselines3-contrib)
 - [SBX (SB3 + JAX, uses SB3 buffers so can also benefit from compressed buffers here)](https://github.com/araffin/sbx)
@@ -233,6 +233,23 @@ buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype, co
 # Now, safe to initialize multi-processing environments!
 env = SubprocVecEnv(...)
 ```
+
+---
+## Cite This Project
+
+If you use this project in your research or work, please cite:
+
+```bibtex
+@article{Huang2025EnhancingRL,
+  title={Enhancing Reinforcement Learning in 3D Environments through Semantic Segmentation: A Case Study in ViZDoom},
+  author={Hugo Huang},
+  journal={ArXiv},
+  year={2025},
+  volume={abs/2511.11703},
+  url={https://arxiv.org/abs/2511.11703},
+}
+```
+I really appreciate it :-)
 
 ---
 ## Recording Buffers
