@@ -6,8 +6,8 @@ import torch as th
 from gymnasium import spaces
 from stable_baselines3.common.buffers import (
     BaseBuffer,
-    RolloutBuffer,
     DictRolloutBufferSamples,
+    RolloutBuffer,
     RolloutBufferSamples,
     VecNormalize,
 )

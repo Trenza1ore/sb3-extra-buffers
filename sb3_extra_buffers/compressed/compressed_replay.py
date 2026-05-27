@@ -6,7 +6,10 @@ import numpy as np
 import torch as th
 from gymnasium import spaces
 from stable_baselines3.common.buffers import BaseBuffer, ReplayBuffer, psutil
-from stable_baselines3.common.type_aliases import DictReplayBufferSamples, ReplayBufferSamples
+from stable_baselines3.common.type_aliases import (
+    DictReplayBufferSamples,
+    ReplayBufferSamples,
+)
 from stable_baselines3.common.vec_env import VecNormalize
 
 from sb3_extra_buffers.compressed.base import BaseCompressedBuffer
