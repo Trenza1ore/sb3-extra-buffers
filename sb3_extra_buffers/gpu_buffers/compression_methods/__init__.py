@@ -1,0 +1,1 @@
+"""GPU compression method registry."""

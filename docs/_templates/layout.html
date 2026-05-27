@@ -1,0 +1,11 @@
+{% extends "!layout.html" %}
+
+{# Home is the master doc and cannot be listed in the root toctree; prepend it here. #}
+{% block menu %}
+<ul>
+  <li class="toctree-l1">
+    <a class="reference internal" href="{% if pagename == master_doc %}index.html{% else %}{{ pathto(master_doc) }}{% endif %}">Home</a>
+  </li>
+</ul>
+{{ super() }}
+{% endblock %}

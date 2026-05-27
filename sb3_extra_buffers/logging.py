@@ -1,3 +1,5 @@
+"""Package-wide logger configuration."""
+
 import logging
 import sys
 

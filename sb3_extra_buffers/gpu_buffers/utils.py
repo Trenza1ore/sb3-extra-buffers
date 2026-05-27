@@ -1,3 +1,5 @@
+"""Torch dtype helpers for GPU buffer compression."""
+
 import torch as th
 
 _unsigned_int_types = [th.uint8, th.uint16, th.uint32, th.uint64]

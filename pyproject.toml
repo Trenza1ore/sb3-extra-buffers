@@ -68,7 +68,7 @@ target-version = "py39"
 select = ["E", "F", "I"]
 
 [tool.ruff.lint.pydocstyle]
-convention = "pep257"
+convention = "google"
 
 [tool.pylint.MAIN]
 ignore-paths = ["^(examples|tests|docs|scripts)/.*"]

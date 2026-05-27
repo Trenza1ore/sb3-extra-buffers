@@ -1,3 +1,5 @@
+"""Experimental rollout buffer that delegates to multiple underlying buffers."""
+
 import concurrent.futures
 import warnings
 from typing import Any, Iterable, Optional, Union
@@ -10,6 +12,8 @@ from sb3_extra_buffers.logging import logger
 
 
 class DummyVecRolloutBuffer(RolloutBuffer):
+    """Forward rollout API calls to a list of underlying buffers."""
+
     def __init__(
         self,
         buffer_size: int,
@@ -21,6 +25,18 @@ class DummyVecRolloutBuffer(RolloutBuffer):
         buffers: Optional[Iterable[BaseBuffer]] = None,
         **kwargs,
     ):
+        """Create a facade over multiple rollout buffers.
+
+        Args:
+            buffer_size: Steps per environment for each underlying buffer.
+            observation_space: Shared observation space.
+            action_space: Shared action space.
+            device: Torch device passed to the base rollout buffer.
+            n_envs: Number of parallel environments for the facade.
+            use_threads: Run delegated calls in a thread pool when ``True``.
+            buffers: Underlying buffers to invoke; defaults to an empty list.
+            **kwargs: Additional arguments forwarded to :class:`RolloutBuffer`.
+        """
         warnings.warn(
             "DummyVecRolloutBuffer is fully experimental, use it at caution.",
             category=ImportWarning,
@@ -37,6 +53,7 @@ class DummyVecRolloutBuffer(RolloutBuffer):
         logger.debug(f"Initialized DummyVecBuf{self.__hash__()} successfully")
 
     def __del__(self):
+        """Shut down the optional thread pool executor."""
         try:
             self._executor.shutdown(cancel_futures=True)
         except Exception:  # pylint: disable=broad-exception-caught
@@ -44,6 +61,7 @@ class DummyVecRolloutBuffer(RolloutBuffer):
 
     @property
     def full(self):
+        """Return whether every underlying buffer is full."""
         return all(buffer.full for buffer in self._buffers)
 
     @full.setter

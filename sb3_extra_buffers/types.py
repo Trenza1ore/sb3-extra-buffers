@@ -1,3 +1,5 @@
+"""Shared type aliases for buffers and numeric values."""
+
 from typing import Union
 
 import numpy as np

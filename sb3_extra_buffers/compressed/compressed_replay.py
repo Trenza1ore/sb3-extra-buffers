@@ -1,3 +1,5 @@
+"""Replay buffers that store compressed observations."""
+
 import warnings
 from functools import lru_cache
 from typing import Any, Literal, Optional, Union
@@ -41,6 +43,23 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
         decompression_kwargs: Optional[dict] = None,
         output_dtype: Literal["raw", "float"] = "raw",
     ):
+        """Create a compressed replay buffer for vector or image observations.
+
+        Args:
+            buffer_size: Maximum number of transitions per environment.
+            observation_space: Gymnasium observation space.
+            action_space: Gymnasium action space.
+            device: Torch device used when sampling batches.
+            n_envs: Number of parallel environments.
+            optimize_memory_usage: Reuse observation slots for next observations.
+            handle_timeout_termination: Store timeout flags from ``TimeLimit.truncated``.
+            dtypes: Element and run-length dtypes for compression.
+            normalize_images: Divide image observations by 255 when sampling.
+            compression_method: Registered compression method name.
+            compression_kwargs: Keyword arguments for compression.
+            decompression_kwargs: Keyword arguments for decompression.
+            output_dtype: Sample dtype for observations (``"raw"`` keeps storage dtype).
+        """
         # Avoid calling ReplayBuffer.__init__ which might be over-allocating memory for observations
         BaseBuffer.__init__(  # pylint: disable=non-parent-init-called
             self, buffer_size, observation_space, action_space, device, n_envs=n_envs
@@ -136,6 +155,16 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
         done: np.ndarray,
         infos: list[dict[str, Any]],
     ) -> None:
+        """Add a transition, compressing observations before storage.
+
+        Args:
+            obs: Current observation batch.
+            next_obs: Next observation batch.
+            action: Action batch.
+            reward: Reward batch.
+            done: Episode termination flags.
+            infos: Per-environment info dicts from the vectorized environment.
+        """
         # Reshape needed when using multiple envs with discrete observations
         # as numpy cannot broadcast (n_discrete,) to (n_discrete, 1)
         if isinstance(self.observation_space, spaces.Discrete):
@@ -224,10 +253,12 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
 
     @lru_cache(maxsize=1024)
     def reconstruct_obs(self, idx: int, env_idx: int):
+        """Decompress the observation stored at ``(idx, env_idx)``."""
         return self._decompress(self.observations[idx, env_idx]).reshape(self.obs_shape)
 
     @lru_cache(maxsize=1024)
     def reconstruct_nextobs(self, idx: int, env_idx: int):
+        """Decompress the next observation stored at ``(idx, env_idx)``."""
         return self._decompress(self.next_observations[idx, env_idx]).reshape(self.obs_shape)
 
 
@@ -255,6 +286,23 @@ class CompressedDictReplayBuffer(CompressedReplayBuffer):
         decompression_kwargs: Optional[dict] = None,
         output_dtype: Literal["raw", "float"] = "raw",
     ):
+        """Create a compressed replay buffer for dictionary observations.
+
+        Args:
+            buffer_size: Maximum number of transitions per environment.
+            observation_space: Gymnasium ``Dict`` observation space.
+            action_space: Gymnasium action space.
+            device: Torch device used when sampling batches.
+            n_envs: Number of parallel environments.
+            optimize_memory_usage: Must be ``False`` for dict observations.
+            handle_timeout_termination: Store timeout flags from ``TimeLimit.truncated``.
+            dtypes: Element and run-length dtypes for compression.
+            normalize_images: Divide image observations by 255 when sampling.
+            compression_method: Registered compression method name.
+            compression_kwargs: Keyword arguments for compression.
+            decompression_kwargs: Keyword arguments for decompression.
+            output_dtype: Sample dtype for observations (``"raw"`` keeps storage dtype).
+        """
         # Avoid calling ReplayBuffer.__init__ which might be over-allocating memory for observations
         BaseBuffer.__init__(  # pylint: disable=non-parent-init-called
             self, buffer_size, observation_space, action_space, device, n_envs=n_envs
@@ -315,6 +363,16 @@ class CompressedDictReplayBuffer(CompressedReplayBuffer):
         done: np.ndarray,
         infos: list[dict[str, Any]],
     ) -> None:
+        """Add a dict observation transition, compressing each key separately.
+
+        Args:
+            obs: Current observation dict.
+            next_obs: Next observation dict.
+            action: Action batch.
+            reward: Reward batch.
+            done: Episode termination flags.
+            infos: Per-environment info dicts from the vectorized environment.
+        """
         # Copy to avoid modification by reference
         elem_type = self.dtypes["elem_type"]
         elem_is_int = np.issubdtype(elem_type, np.integer)

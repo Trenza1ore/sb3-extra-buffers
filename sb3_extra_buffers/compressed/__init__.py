@@ -1,3 +1,5 @@
+"""Compressed rollout and replay buffers for Stable-Baselines3."""
+
 __all__ = [
     "CompressedRolloutBuffer",
     "CompressedDictRolloutBuffer",

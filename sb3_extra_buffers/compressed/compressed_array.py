@@ -1,3 +1,5 @@
+"""NumPy ndarray subclass that stores compressed observation bytes."""
+
 from threading import Lock
 from typing import Any, Literal, Optional, Union
 
@@ -25,6 +27,22 @@ class CompressedArray(np.ndarray, BaseCompressedBuffer):
         decompression_kwargs: Optional[dict] = None,
         **kwargs,
     ):
+        """Initialize compression settings for this array view.
+
+        Args:
+            shape: Storage shape for compressed byte objects.
+            dtype: Element dtype of reconstructed observations.
+            obs_shape: Original observation shape before flattening.
+            buffer: Optional underlying buffer passed to ``np.ndarray``.
+            offset: Byte offset into ``buffer``.
+            strides: Stride tuple passed to ``np.ndarray``.
+            order: Memory layout order passed to ``np.ndarray``.
+            dtypes: Element and run-length dtypes; inferred when omitted.
+            compression_method: Registered compression method name.
+            compression_kwargs: Keyword arguments for compression.
+            decompression_kwargs: Keyword arguments for decompression.
+            **kwargs: Additional arguments forwarded to the ndarray base.
+        """
         self.obs_shape = obs_shape
         flatten_len = np.prod(obs_shape)
         self.flatten_config = dict(shape=flatten_len, dtype=dtype)
@@ -61,6 +79,7 @@ class CompressedArray(np.ndarray, BaseCompressedBuffer):
         decompression_kwargs: Optional[dict] = None,
         **kwargs,
     ):
+        """Allocate object-dtype storage for compressed entries."""
         self = super().__new__(
             cls,
             shape=shape,
@@ -73,6 +92,7 @@ class CompressedArray(np.ndarray, BaseCompressedBuffer):
         return self
 
     def __array_finalize__(self, obj):
+        """Copy compression state when NumPy creates a derived array view."""
         if obj is None:
             return
         super().__array_finalize__(obj)
@@ -92,6 +112,7 @@ class CompressedArray(np.ndarray, BaseCompressedBuffer):
             setattr(self, attr, getattr(obj, attr))
 
     def __setitem__(self, index, value):
+        """Compress ``value`` before storing it at ``index``."""
         with self._thread_lock:
             self._suppress_get_item = True
             arr = np.ravel(np.asarray(value))
@@ -99,6 +120,7 @@ class CompressedArray(np.ndarray, BaseCompressedBuffer):
             self._suppress_get_item = False
 
     def __getitem__(self, index):
+        """Return decompressed observation(s) for ``index``."""
         # np.ndarray.__setitem__ may invoke np.ndarray.__getitem__ through internal operations
         retrieved = super().__getitem__(index)
         if self._suppress_get_item or retrieved is None:

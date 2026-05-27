@@ -1,3 +1,5 @@
+"""Load the package version from ``version.txt``."""
+
 __all__ = ["package_version"]
 
 import os

@@ -1,3 +1,5 @@
+"""LZ4 frame and block compression helpers."""
+
 import lz4.block
 import lz4.frame
 import numpy as np
