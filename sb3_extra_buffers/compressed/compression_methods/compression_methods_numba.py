@@ -3,10 +3,8 @@ from numba import njit
 
 
 @njit
-def _rle_numba_decompress(
-    elements: np.ndarray, runs: np.ndarray, out: np.ndarray
-) -> np.ndarray:
-    """RLE Decompression with Numba JIT"""
+def _rle_numba_decompress(elements: np.ndarray, runs: np.ndarray, out: np.ndarray) -> np.ndarray:
+    """RLE Decompression with Numba JIT."""
     idx = 0
     for i in range(len(runs)):
         run_len = int(runs[i])
@@ -16,14 +14,9 @@ def _rle_numba_decompress(
 
 
 def rle_numba_decompress(
-    data: bytes,
-    *args,
-    elem_type: np.dtype,
-    runs_type: np.dtype,
-    arr_configs: dict,
-    **kwargs
+    data: bytes, *args, elem_type: np.dtype, runs_type: np.dtype, arr_configs: dict, **kwargs
 ) -> np.ndarray:
-    """RLE Decompression with Numba JIT (wrapped)"""
+    """RLE Decompression with Numba JIT (wrapped)."""
     data_len = len(data)
     out = np.zeros(**arr_configs)
     runs_itemsize = int(np.dtype(runs_type).itemsize)
@@ -40,10 +33,8 @@ def rle_numba_decompress(
     return _rle_numba_decompress(elements, runs, out)
 
 
-def init_jit(
-    *, elem_type: np.dtype = np.uint8, runs_type: np.dtype = np.uint16, **kwargs
-):
-    """Initialize Numba JIT"""
+def init_jit(*, elem_type: np.dtype = np.uint8, runs_type: np.dtype = np.uint16, **kwargs):
+    """Initialize Numba JIT."""
     dummy_len = np.array([1], dtype=runs_type)
     dummy_val = np.array([1], dtype=elem_type)
     dummy_out = np.zeros(shape=1, dtype=np.float32)

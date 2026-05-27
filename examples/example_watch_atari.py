@@ -23,9 +23,7 @@ if __name__ == "__main__":
         custom_objects=dict(rollout_buffer_class=DummyCls),
     )
     render_mode = "human" if RENDER_GAMES else "rgb_array"
-    vec_env = make_env(
-        env_id=ATARI_GAME, n_envs=1, framestack=4, render_mode=render_mode
-    )
+    vec_env = make_env(env_id=ATARI_GAME, n_envs=1, framestack=4, render_mode=render_mode)
     obs = vec_env.reset()
 
     # Play the games

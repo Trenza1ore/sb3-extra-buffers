@@ -26,9 +26,7 @@ def test_rle_compression_roundtrip(input_arr):
     runs_type = th.int32
 
     # Compress
-    pos_runs, pos_elem, run_length = rle_compress(
-        input_arr, buffer, elem_type, runs_type
-    )
+    pos_runs, pos_elem, run_length = rle_compress(input_arr, buffer, elem_type, runs_type)
     th_decomp = rle_decompress(
         buffer,
         pos_runs,
@@ -38,20 +36,8 @@ def test_rle_compression_roundtrip(input_arr):
         runs_type,
         dict(size=(input_arr.size(0)), dtype=elem_type),
     )
-    runs = (
-        buffer.read_bytes((pos_runs, run_length), runs_type)
-        .cpu()
-        .numpy()
-        .copy()
-        .tobytes()
-    )
-    elem = (
-        buffer.read_bytes((pos_elem, run_length), elem_type)
-        .cpu()
-        .numpy()
-        .copy()
-        .tobytes()
-    )
+    runs = buffer.read_bytes((pos_runs, run_length), runs_type).cpu().numpy().copy().tobytes()
+    elem = buffer.read_bytes((pos_elem, run_length), elem_type).cpu().numpy().copy().tobytes()
 
     # Decompress
     rle_numpy_decompress_old(

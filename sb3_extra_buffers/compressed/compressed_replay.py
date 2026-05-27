@@ -47,9 +47,7 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
         )
         self.normalize_images = normalize_images
         self.flatten_len = np.prod(self.obs_shape)
-        self.flatten_config = dict(
-            shape=self.flatten_len, dtype=observation_space.dtype
-        )
+        self.flatten_config = dict(shape=self.flatten_len, dtype=observation_space.dtype)
         self.output_dtype = th.float32 if output_dtype == "float" else None
 
         # Handle dtypes
@@ -85,9 +83,7 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
 
         if not optimize_memory_usage:
             # When optimizing memory, `observations` contains also the next observation
-            self.next_observations = np.empty(
-                (self.buffer_size, self.n_envs), dtype=object
-            )
+            self.next_observations = np.empty((self.buffer_size, self.n_envs), dtype=object)
 
         self.actions = np.zeros(
             (self.buffer_size, self.n_envs, self.action_dim),
@@ -105,10 +101,7 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
         if psutil is not None:
             mem_available = psutil.virtual_memory().available
             total_memory_usage: float = (
-                self.observations.nbytes
-                + self.actions.nbytes
-                + self.rewards.nbytes
-                + self.dones.nbytes
+                self.observations.nbytes + self.actions.nbytes + self.rewards.nbytes + self.dones.nbytes
             )
 
             if not optimize_memory_usage:
@@ -119,7 +112,7 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
             flatten_obs_size = int(self.buffer_size * self.flatten_len * elem_size)
 
             memory_sufficiency = dict()
-            msg = f"Available memory: {mem_available/1e9:.2f}"
+            msg = f"Available memory: {mem_available / 1e9:.2f}"
             for c_rate in [5, 10, 15, 20, 30, 50, 70, 90, 100]:
                 if not optimize_memory_usage:
                     c_rate *= 2
@@ -127,7 +120,7 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
                 estimated_usage = total_memory_usage + bytes_usage
                 is_sufficient = mem_available > estimated_usage
                 memory_sufficiency[c_rate] = is_sufficient
-                msg += f"\n[{'v' if is_sufficient else 'x'}]{c_rate:3d}% would take {estimated_usage/1e9:.2f}GB"
+                msg += f"\n[{'v' if is_sufficient else 'x'}]{c_rate:3d}% would take {estimated_usage / 1e9:.2f}GB"
 
             if not all(memory_sufficiency.values()):
                 msg += "\nUsually a suitable observation input should take less than 10% of original size, "
@@ -159,81 +152,46 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
         elem_min, elem_max = elem_type_info.min, elem_type_info.max
 
         if isinstance(obs, th.Tensor):
-            obs = (
-                th.clamp(obs, elem_min, elem_max)
-                .cpu()
-                .numpy()
-                .astype(elem_type, casting="unsafe")
-            )
-            next_obs = (
-                th.clamp(next_obs, elem_min, elem_max)
-                .cpu()
-                .numpy()
-                .astype(elem_type, casting="unsafe")
-            )
+            obs = th.clamp(obs, elem_min, elem_max).cpu().numpy().astype(elem_type, casting="unsafe")
+            next_obs = th.clamp(next_obs, elem_min, elem_max).cpu().numpy().astype(elem_type, casting="unsafe")
         else:
             obs = np.clip(obs, elem_min, elem_max, dtype=elem_type, casting="unsafe")
-            next_obs = np.clip(
-                next_obs, elem_min, elem_max, dtype=elem_type, casting="unsafe"
-            )
+            next_obs = np.clip(next_obs, elem_min, elem_max, dtype=elem_type, casting="unsafe")
 
         # Compress everything
-        self.observations[self.pos] = [
-            self._compress(env_obs.ravel()) for env_obs in obs
-        ]
+        self.observations[self.pos] = [self._compress(env_obs.ravel()) for env_obs in obs]
 
         if self.optimize_memory_usage:
             next_pos = (self.pos + 1) % self.buffer_size
-            self.observations[next_pos] = [
-                self._compress(env_obs.ravel()) for env_obs in next_obs
-            ]
+            self.observations[next_pos] = [self._compress(env_obs.ravel()) for env_obs in next_obs]
         else:
-            self.next_observations[self.pos] = [
-                self._compress(env_obs.ravel()) for env_obs in next_obs
-            ]
+            self.next_observations[self.pos] = [self._compress(env_obs.ravel()) for env_obs in next_obs]
 
         self.actions[self.pos] = np.array(action)
         self.rewards[self.pos] = np.array(reward)
         self.dones[self.pos] = np.array(done)
 
         if self.handle_timeout_termination:
-            self.timeouts[self.pos] = np.array(
-                [info.get("TimeLimit.truncated", False) for info in infos]
-            )
+            self.timeouts[self.pos] = np.array([info.get("TimeLimit.truncated", False) for info in infos])
 
         self.pos += 1
         if self.pos == self.buffer_size:
             self.full = True
             self.pos = 0
 
-    def _get_samples(
-        self, batch_inds: np.ndarray, env: Optional[VecNormalize] = None
-    ) -> ReplayBufferSamples:
+    def _get_samples(self, batch_inds: np.ndarray, env: Optional[VecNormalize] = None) -> ReplayBufferSamples:
         # Sample randomly the env idx
         env_indices = np.random.randint(0, high=self.n_envs, size=(len(batch_inds),))
         self.reconstruct_obs.cache_clear()
-        obs = np.stack(
-            [
-                self.reconstruct_obs(idx, env_idx)
-                for idx, env_idx in zip(batch_inds, env_indices)
-            ]
-        )
+        obs = np.stack([self.reconstruct_obs(idx, env_idx) for idx, env_idx in zip(batch_inds, env_indices)])
         if self.optimize_memory_usage:
             batch_inds_offset = (batch_inds + 1) % self.buffer_size
             n_obs = np.stack(
-                [
-                    self.reconstruct_obs(idx, env_idx)
-                    for idx, env_idx in zip(batch_inds_offset, env_indices)
-                ]
+                [self.reconstruct_obs(idx, env_idx) for idx, env_idx in zip(batch_inds_offset, env_indices)]
             )
         else:
             self.reconstruct_nextobs.cache_clear()
-            n_obs = np.stack(
-                [
-                    self.reconstruct_nextobs(idx, env_idx)
-                    for idx, env_idx in zip(batch_inds, env_indices)
-                ]
-            )
+            n_obs = np.stack([self.reconstruct_nextobs(idx, env_idx) for idx, env_idx in zip(batch_inds, env_indices)])
 
         with warnings.catch_warnings():
             warnings.filterwarnings(
@@ -253,13 +211,8 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
             n_obs /= 255.0
 
         actions = self.actions[batch_inds, env_indices, :]
-        dones = (
-            self.dones[batch_inds, env_indices]
-            * (1 - self.timeouts[batch_inds, env_indices])
-        ).reshape(-1, 1)
-        rewards = self._normalize_reward(
-            self.rewards[batch_inds, env_indices].reshape(-1, 1), env
-        )
+        dones = (self.dones[batch_inds, env_indices] * (1 - self.timeouts[batch_inds, env_indices])).reshape(-1, 1)
+        rewards = self._normalize_reward(self.rewards[batch_inds, env_indices].reshape(-1, 1), env)
 
         return ReplayBufferSamples(
             obs,
@@ -275,9 +228,7 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
 
     @lru_cache(maxsize=1024)
     def reconstruct_nextobs(self, idx: int, env_idx: int):
-        return self._decompress(self.next_observations[idx, env_idx]).reshape(
-            self.obs_shape
-        )
+        return self._decompress(self.next_observations[idx, env_idx]).reshape(self.obs_shape)
 
 
 class CompressedDictReplayBuffer(CompressedReplayBuffer):
@@ -339,13 +290,9 @@ class CompressedDictReplayBuffer(CompressedReplayBuffer):
         self.buffer_size = max(buffer_size // n_envs, 1)
         self.optimize_memory_usage = optimize_memory_usage
 
-        self.observations = {
-            key: np.empty((self.buffer_size, self.n_envs), dtype=object)
-            for key in self.obs_shape
-        }
+        self.observations = {key: np.empty((self.buffer_size, self.n_envs), dtype=object) for key in self.obs_shape}
         self.next_observations = {
-            key: np.empty((self.buffer_size, self.n_envs), dtype=object)
-            for key in self.obs_shape
+            key: np.empty((self.buffer_size, self.n_envs), dtype=object) for key in self.obs_shape
         }
 
         self.actions = np.zeros(
@@ -384,29 +331,13 @@ class CompressedDictReplayBuffer(CompressedReplayBuffer):
                 obs_ = obs_.reshape((self.n_envs,) + self.obs_shape[key])
                 next_obs_ = next_obs_.reshape((self.n_envs,) + self.obs_shape[key])
             if isinstance(obs_, th.Tensor):
-                obs_ = (
-                    th.clamp(obs_, elem_min, elem_max)
-                    .cpu()
-                    .numpy()
-                    .astype(elem_type, casting="unsafe")
-                )
-                next_obs_ = (
-                    th.clamp(next_obs_, elem_min, elem_max)
-                    .cpu()
-                    .numpy()
-                    .astype(elem_type, casting="unsafe")
-                )
+                obs_ = th.clamp(obs_, elem_min, elem_max).cpu().numpy().astype(elem_type, casting="unsafe")
+                next_obs_ = th.clamp(next_obs_, elem_min, elem_max).cpu().numpy().astype(elem_type, casting="unsafe")
             else:
                 obs_ = np.clip(obs_, elem_min, elem_max, dtype=elem_type, casting="unsafe")
-                next_obs_ = np.clip(
-                    next_obs_, elem_min, elem_max, dtype=elem_type, casting="unsafe"
-                )
-            self.observations[key][self.pos] = [
-                self._compress(env_obs.ravel()) for env_obs in obs_
-            ]
-            self.next_observations[key][self.pos] = [
-                self._compress(env_obs.ravel()) for env_obs in next_obs_
-            ]
+                next_obs_ = np.clip(next_obs_, elem_min, elem_max, dtype=elem_type, casting="unsafe")
+            self.observations[key][self.pos] = [self._compress(env_obs.ravel()) for env_obs in obs_]
+            self.next_observations[key][self.pos] = [self._compress(env_obs.ravel()) for env_obs in next_obs_]
 
         # Reshape to handle multi-dim and discrete action spaces, see GH #970 #1392
         action = action.reshape((self.n_envs, self.action_dim))
@@ -416,37 +347,25 @@ class CompressedDictReplayBuffer(CompressedReplayBuffer):
         self.dones[self.pos] = np.array(done)
 
         if self.handle_timeout_termination:
-            self.timeouts[self.pos] = np.array(
-                [info.get("TimeLimit.truncated", False) for info in infos]
-            )
+            self.timeouts[self.pos] = np.array([info.get("TimeLimit.truncated", False) for info in infos])
 
         self.pos += 1
         if self.pos == self.buffer_size:
             self.full = True
             self.pos = 0
 
-    def _get_samples(
-        self, batch_inds: np.ndarray, env: Optional[VecNormalize] = None
-    ) -> DictReplayBufferSamples:
+    def _get_samples(self, batch_inds: np.ndarray, env: Optional[VecNormalize] = None) -> DictReplayBufferSamples:
         # Sample randomly the env idx
         env_indices = np.random.randint(0, high=self.n_envs, size=(len(batch_inds),))
         self._reconstruct_obs.cache_clear()
         self._reconstruct_nextobs.cache_clear()
         obs = {
-            key: np.stack(
-                [
-                    self._reconstruct_obs(idx, env_idx, key)
-                    for idx, env_idx in zip(batch_inds, env_indices)
-                ]
-            )
+            key: np.stack([self._reconstruct_obs(idx, env_idx, key) for idx, env_idx in zip(batch_inds, env_indices)])
             for key in self.observations.keys()
         }
         n_obs = {
             key: np.stack(
-                [
-                    self._reconstruct_nextobs(idx, env_idx, key)
-                    for idx, env_idx in zip(batch_inds, env_indices)
-                ]
+                [self._reconstruct_nextobs(idx, env_idx, key) for idx, env_idx in zip(batch_inds, env_indices)]
             )
             for key in self.next_observations.keys()
         }
@@ -462,32 +381,21 @@ class CompressedDictReplayBuffer(CompressedReplayBuffer):
                 category=UserWarning,
             )
             observations = {
-                key: th.from_numpy(obs_).to(
-                    device=self.device, dtype=self.output_dtype, copy=True
-                )
+                key: th.from_numpy(obs_).to(device=self.device, dtype=self.output_dtype, copy=True)
                 for key, obs_ in obs.items()
             }
             next_observations = {
-                key: th.from_numpy(obs_).to(
-                    device=self.device, dtype=self.output_dtype, copy=True
-                )
+                key: th.from_numpy(obs_).to(device=self.device, dtype=self.output_dtype, copy=True)
                 for key, obs_ in n_obs.items()
             }
 
         if self.normalize_images:
             observations = {key: obs / 255.0 for key, obs in observations.items()}
-            next_observations = {
-                key: obs / 255.0 for key, obs in next_observations.items()
-            }
+            next_observations = {key: obs / 255.0 for key, obs in next_observations.items()}
 
         actions = self.actions[batch_inds, env_indices, :]
-        dones = (
-            self.dones[batch_inds, env_indices]
-            * (1 - self.timeouts[batch_inds, env_indices])
-        ).reshape(-1, 1)
-        rewards = self._normalize_reward(
-            self.rewards[batch_inds, env_indices].reshape(-1, 1), env
-        )
+        dones = (self.dones[batch_inds, env_indices] * (1 - self.timeouts[batch_inds, env_indices])).reshape(-1, 1)
+        rewards = self._normalize_reward(self.rewards[batch_inds, env_indices].reshape(-1, 1), env)
 
         return DictReplayBufferSamples(
             observations,
@@ -499,9 +407,9 @@ class CompressedDictReplayBuffer(CompressedReplayBuffer):
 
     @lru_cache(maxsize=1024)
     def _reconstruct_obs(self, idx: int, env_idx: int, key: str):
-        return self._decompress(
-            self.observations[key][idx, env_idx], arr_configs=self.flatten_configs[key]
-        ).reshape(self.obs_shape[key])
+        return self._decompress(self.observations[key][idx, env_idx], arr_configs=self.flatten_configs[key]).reshape(
+            self.obs_shape[key]
+        )
 
     @lru_cache(maxsize=1024)
     def _reconstruct_nextobs(self, idx: int, env_idx: int, key: str):

@@ -18,9 +18,7 @@ except ImportError:
 
 def process_outcome(infos: list[dict]) -> tuple[np.ndarray[float], np.ndarray[bool]]:
     nan = float("nan")
-    reward = np.asarray(
-        [info.get("episode", {}).get("r", nan) for info in infos], dtype=float
-    )
+    reward = np.asarray([info.get("episode", {}).get("r", nan) for info in infos], dtype=float)
     done = np.zeros_like(reward, dtype="?")
     done[np.isfinite(reward)] = True
     return reward, done

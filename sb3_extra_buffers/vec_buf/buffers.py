@@ -25,15 +25,11 @@ class DummyVecRolloutBuffer(RolloutBuffer):
             "DummyVecRolloutBuffer is fully experimental, use it at caution.",
             category=ImportWarning,
         )
-        super().__init__(
-            buffer_size, observation_space, action_space, device, n_envs, **kwargs
-        )
+        super().__init__(buffer_size, observation_space, action_space, device, n_envs, **kwargs)
         del self.observations
         self._buffers = buffers or []
         if use_threads:
-            self._executor = concurrent.futures.ThreadPoolExecutor(
-                max_workers=len(buffers)
-            )
+            self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=len(buffers))
         else:
             self._executor = None
         logger.debug(f"Initializing DummyVecBuf{self.__hash__()}")
@@ -64,23 +60,16 @@ class DummyVecRolloutBuffer(RolloutBuffer):
             if not_private and callable(getattr(self, attr)):
 
                 class Wrapper:
-                    def __init__(
-                        self, name: str, buffers: list[BaseBuffer], executor: Any = None
-                    ):
+                    def __init__(self, name: str, buffers: list[BaseBuffer], executor: Any = None):
                         self._name = name
                         self._buffers = buffers
                         self._executor = executor
 
                     def __call__(self, *args, **kwargs):
                         if self._executor is None:
-                            return [
-                                getattr(buffer, self._name)(*args, **kwargs)
-                                for buffer in self._buffers
-                            ]
+                            return [getattr(buffer, self._name)(*args, **kwargs) for buffer in self._buffers]
                         tasks = [
-                            self._executor.submit(
-                                getattr(buffer, self._name), *args, **kwargs
-                            )
+                            self._executor.submit(getattr(buffer, self._name), *args, **kwargs)
                             for buffer in self._buffers
                         ]
                         concurrent.futures.wait(tasks)

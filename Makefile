@@ -4,7 +4,6 @@
 
 format:
 	ruff check --fix || true
-	ruff check --select I --fix || true
 	ruff format || true
 
 lint:
@@ -14,7 +13,7 @@ test:
 	@pytest tests/
 
 docstring:
-	@pydocstyle sb3_extra_buffers/
+	@ruff check --fix --select D sb3_extra_buffers/
 
 amend:
 	git commit --amend --no-edit

@@ -80,9 +80,7 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         )
         self.rewards = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.returns = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
-        self.episode_starts = np.zeros(
-            (self.buffer_size, self.n_envs), dtype=np.float32
-        )
+        self.episode_starts = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.values = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.log_probs = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.advantages = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
@@ -98,8 +96,7 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         value: th.Tensor,
         log_prob: th.Tensor,
     ) -> None:
-        """
-        :param obs: Observation
+        """:param obs: Observation
         :param action: Action
         :param reward:
         :param episode_start: Start of episode signal.
@@ -126,19 +123,12 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         elem_min, elem_max = elem_type_info.min, elem_type_info.max
 
         if isinstance(obs, th.Tensor):
-            obs = (
-                th.clamp(obs, elem_min, elem_max)
-                .cpu()
-                .numpy()
-                .astype(elem_type, casting="unsafe")
-            )
+            obs = th.clamp(obs, elem_min, elem_max).cpu().numpy().astype(elem_type, casting="unsafe")
         else:
             obs = np.clip(obs, elem_min, elem_max, dtype=elem_type, casting="unsafe")
 
         # Compress everything
-        self.observations[self.pos] = [
-            self._compress(env_obs.ravel()) for env_obs in obs
-        ]
+        self.observations[self.pos] = [self._compress(env_obs.ravel()) for env_obs in obs]
 
         self.actions[self.pos] = np.array(action)
         self.rewards[self.pos] = np.array(reward)
@@ -149,9 +139,7 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         if self.pos == self.buffer_size:
             self.full = True
 
-    def get(
-        self, batch_size: Optional[int] = None
-    ) -> Generator[RolloutBufferSamples, None, None]:
+    def get(self, batch_size: Optional[int] = None) -> Generator[RolloutBufferSamples, None, None]:
         assert self.full, ""
         indices = np.random.permutation(self.buffer_size * self.n_envs)
         # Prepare the data
@@ -263,18 +251,14 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
     def reset(self) -> None:
         self.observations = {}
         for key in self.obs_shape:
-            self.observations[key] = np.empty(
-                (self.buffer_size, self.n_envs), dtype=object
-            )
+            self.observations[key] = np.empty((self.buffer_size, self.n_envs), dtype=object)
         self.actions = np.zeros(
             (self.buffer_size, self.n_envs, self.action_dim),
             dtype=self.action_space.dtype,
         )
         self.rewards = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.returns = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
-        self.episode_starts = np.zeros(
-            (self.buffer_size, self.n_envs), dtype=np.float32
-        )
+        self.episode_starts = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.values = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.log_probs = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.advantages = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
@@ -290,8 +274,7 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
         value: th.Tensor,
         log_prob: th.Tensor,
     ) -> None:
-        """
-        :param obs: Observation
+        """:param obs: Observation
         :param action: Action
         :param reward:
         :param episode_start: Start of episode signal.
@@ -315,17 +298,10 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
             if isinstance(self.observation_space.spaces[key], spaces.Discrete):
                 obs_ = obs_.reshape((self.n_envs,) + self.obs_shape[key])
             if isinstance(obs_, th.Tensor):
-                obs_ = (
-                    th.clamp(obs_, elem_min, elem_max)
-                    .cpu()
-                    .numpy()
-                    .astype(elem_type, casting="unsafe")
-                )
+                obs_ = th.clamp(obs_, elem_min, elem_max).cpu().numpy().astype(elem_type, casting="unsafe")
             else:
                 obs_ = np.clip(obs_, elem_min, elem_max, dtype=elem_type, casting="unsafe")
-            self.observations[key][self.pos] = [
-                self._compress(env_obs.ravel()) for env_obs in obs_
-            ]
+            self.observations[key][self.pos] = [self._compress(env_obs.ravel()) for env_obs in obs_]
 
         # Reshape to handle multi-dim and discrete action spaces, see GH #970 #1392
         action = action.reshape((self.n_envs, self.action_dim))
@@ -339,9 +315,7 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
         if self.pos == self.buffer_size:
             self.full = True
 
-    def get(
-        self, batch_size: Optional[int] = None
-    ) -> Generator[DictRolloutBufferSamples, None, None]:
+    def get(self, batch_size: Optional[int] = None) -> Generator[DictRolloutBufferSamples, None, None]:
         assert self.full, ""
         indices = np.random.permutation(self.buffer_size * self.n_envs)
         # Prepare the data
@@ -377,9 +351,7 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
                 category=UserWarning,
             )
             for key in self.observations:
-                observations[key] = th.stack(
-                    [self._reconstruct_obs(i, key) for i in batch_inds]
-                )
+                observations[key] = th.stack([self._reconstruct_obs(i, key) for i in batch_inds])
         if self.normalize_images:
             observations = {key: obs / 255.0 for key, obs in observations.items()}
         data = (
@@ -392,7 +364,7 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
         return DictRolloutBufferSamples(observations, *tuple(map(self.to_torch, data)))
 
     def _reconstruct_obs(self, idx: int, key: str):
-        obs = self._decompress(
-            self.observations[key][idx, 0], arr_configs=self.flatten_configs[key]
-        ).reshape(self.obs_shape[key])
+        obs = self._decompress(self.observations[key][idx, 0], arr_configs=self.flatten_configs[key]).reshape(
+            self.obs_shape[key]
+        )
         return th.from_numpy(obs).to(self.device)

@@ -1,0 +1,25 @@
+name: Code format
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install ruff
+      run: python -m pip install --upgrade pip ruff
+
+    - name: Ruff check
+      run: ruff check --select I --select D --select E --select F sb3_extra_buffers/ && ruff format --check

@@ -23,7 +23,7 @@ ENV_TO_TEST = ["MsPacmanNoFrameskip-v4", "PongNoFrameskip-v4"]
 
 def _parse_sb3_version():
     """Parse SB3 version and return (major, minor, patch) as integers.
-    
+
     Parses version strings like "2.7.1", "2.7.1a0", "2.7.1rc1" into (major, minor, patch).
     For pre-release versions, only the numeric part of the patch is extracted.
     """
@@ -150,35 +150,25 @@ def get_tests():
 
 @pytest.mark.parametrize("env_id,compression_method,n_envs,n_stack", list(get_tests()))
 def test_rollout(env_id: str, compression_method: str, n_envs: int, n_stack: int):
-    compressed_buffer_test(
-        env_id, compression_method, n_envs, n_stack, buffer_type="rollout"
-    )
+    compressed_buffer_test(env_id, compression_method, n_envs, n_stack, buffer_type="rollout")
 
 
 @pytest.mark.parametrize("env_id,compression_method,n_envs,n_stack", list(get_tests()))
 def test_replay(env_id: str, compression_method: str, n_envs: int, n_stack: int):
-    compressed_buffer_test(
-        env_id, compression_method, n_envs, n_stack, buffer_type="replay"
-    )
+    compressed_buffer_test(env_id, compression_method, n_envs, n_stack, buffer_type="replay")
 
 
-def compressed_buffer_test(
-    env_id: str, compression_method: str, n_envs: int, n_stack: int, buffer_type: str
-):
+def compressed_buffer_test(env_id: str, compression_method: str, n_envs: int, n_stack: int, buffer_type: str):
     print(
         f"Testing {(env_id, compression_method, n_envs, n_stack, buffer_type)}",
         flush=True,
     )
 
     obs = make_env(env_id=env_id, n_envs=1, framestack=n_stack).observation_space
-    buffer_dtypes = find_buffer_dtypes(
-        obs_shape=obs.shape, elem_dtype=obs.dtype, compression_method=compression_method
-    )
+    buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype, compression_method=compression_method)
 
     # if using pytest, avoid using SubprocVecEnv
-    env = make_env(
-        env_id=env_id, n_envs=n_envs, vec_env_cls=DummyVecEnv, framestack=n_stack
-    )
+    env = make_env(env_id=env_id, n_envs=n_envs, vec_env_cls=DummyVecEnv, framestack=n_stack)
     if buffer_type == "replay":
 
         def collect_data(model: DQN):
@@ -210,9 +200,7 @@ def compressed_buffer_test(
         expected_dtype = uncompressed_dtype
     else:
         extra_args[buffer_type + "_buffer_class"] = buffer_class
-        extra_args[buffer_type + "_buffer_kwargs"] = dict(
-            dtypes=buffer_dtypes, compression_method=compression_method
-        )
+        extra_args[buffer_type + "_buffer_kwargs"] = dict(dtypes=buffer_dtypes, compression_method=compression_method)
 
     model = model_class(
         "CnnPolicy",
@@ -231,9 +219,7 @@ def compressed_buffer_test(
 
     # Check basic properties
     assert last_obs is not None, "No observations stored"
-    assert (
-        last_obs.dtype == expected_dtype
-    ), f"Expected {expected_dtype} observations, got {last_obs.dtype}"
+    assert last_obs.dtype == expected_dtype, f"Expected {expected_dtype} observations, got {last_obs.dtype}"
 
     # Dump to disk for manual inspection (can be disabled with environment variable)
     if os.environ.get("DISABLE_TEST_OBSERVATIONS_SAVE", "false").lower() not in ("true", "1", "yes"):
