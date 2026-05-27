@@ -11,7 +11,7 @@ Changes since `0.4.4`…`0.4.5`.
 ### Breaking Changes
 
 - `CompressedReplayBuffer` now has `output_dtype` defaulting to `raw` instead of `float`.
-- `CompressedRolloutBuffer` now returns observation with environment's `dtype` to exhibit same behavior as [v2.7.1](https://github.com/DLR-RM/stable-baselines3/releases/tag/v2.7.1) of SB3.
+- `CompressedRolloutBuffer` now returns observation with environment's `dtype` to exhibit same behavior as [v2.7.1](https://github.com/DLR-RM/stable-baselines3/releases/tag/v2.7.1) of SB3. (When pre-2.7.1 SB3 is installed, we still cast it to `torch.float32` for backward-compatibility~)
 
 ---
 
