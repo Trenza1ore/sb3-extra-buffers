@@ -31,7 +31,7 @@ lint:
 	@mypy -p sb3_extra_buffers
 
 test:
-	@pytest tests/
+	@DISABLE_TEST_OBSERVATIONS_SAVE=1 pytest tests/
 
 docstring:
 	@ruff check --fix --select D sb3_extra_buffers/
