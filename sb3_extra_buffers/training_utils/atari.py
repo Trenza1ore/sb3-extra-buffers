@@ -1,3 +1,5 @@
+"""Atari environment factory helpers."""
+
 __all__ = ["make_env"]
 
 from typing import Optional
@@ -23,6 +25,19 @@ def make_env(
     seed: Optional[int] = None,
     **kwargs,
 ) -> VecEnvWrapper:
+    """Create a vectorized Atari environment with optional frame stacking.
+
+    Args:
+        env_id: Gymnasium environment identifier.
+        n_envs: Number of parallel environments.
+        vec_env_cls: Vectorized environment class (defaults to subprocess workers).
+        framestack: Number of frames to stack; values below 2 disable stacking.
+        seed: Optional random seed passed to the environment factory.
+        **kwargs: Additional keyword arguments forwarded to ``make_atari_env``.
+
+    Returns:
+        A vectorized environment, transposed for channel-first image policies.
+    """
     gym.register_envs(ale_py)
     if n_envs == 1:
         vec_env_cls = DummyVecEnv

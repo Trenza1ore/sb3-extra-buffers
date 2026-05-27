@@ -1,3 +1,5 @@
+"""Numba-accelerated run-length decompression."""
+
 import numpy as np
 from numba import njit
 

@@ -1,3 +1,5 @@
+"""On-policy rollout buffers that store compressed observations."""
+
 import warnings
 from typing import Generator, Optional, Union
 
@@ -42,6 +44,22 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         compression_kwargs: Optional[dict] = None,
         decompression_kwargs: Optional[dict] = None,
     ):
+        """Create a compressed rollout buffer.
+
+        Args:
+            buffer_size: Number of steps collected per environment before rollout ends.
+            observation_space: Gymnasium observation space.
+            action_space: Gymnasium action space.
+            device: Torch device used when sampling batches.
+            gae_lambda: GAE lambda for advantage estimation.
+            gamma: Discount factor for returns.
+            n_envs: Number of parallel environments.
+            dtypes: Element and run-length dtypes for compression.
+            normalize_images: Divide image observations by 255 when sampling.
+            compression_method: Registered compression method name.
+            compression_kwargs: Keyword arguments for compression.
+            decompression_kwargs: Keyword arguments for decompression.
+        """
         # Avoid calling RolloutBuffer.reset which might be over-allocating memory for observations
         BaseBuffer.__init__(  # pylint: disable=non-parent-init-called
             self, buffer_size, observation_space, action_space, device, n_envs=n_envs
@@ -72,6 +90,7 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         self.reset()
 
     def reset(self) -> None:
+        """Clear rollout storage and reset the write position."""
         self.observations = np.empty((self.buffer_size, self.n_envs), dtype=object)
 
         self.actions = np.zeros(
@@ -96,14 +115,15 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         value: th.Tensor,
         log_prob: th.Tensor,
     ) -> None:
-        """:param obs: Observation
-        :param action: Action
-        :param reward:
-        :param episode_start: Start of episode signal.
-        :param value: estimated value of the current state
-            following the current policy.
-        :param log_prob: log probability of the action
-            following the current policy.
+        """Add a rollout step with a compressed observation.
+
+        Args:
+            obs: Observation batch from the environment.
+            action: Action batch.
+            reward: Reward batch.
+            episode_start: Whether each environment started a new episode.
+            value: Value estimate for the current state under the policy.
+            log_prob: Log probability of the action under the policy.
         """
         if len(log_prob.shape) == 0:
             # Reshape 0-d tensor to avoid error
@@ -140,6 +160,14 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
             self.full = True
 
     def get(self, batch_size: Optional[int] = None) -> Generator[RolloutBufferSamples, None, None]:
+        """Yield shuffled rollout minibatches after the buffer is full.
+
+        Args:
+            batch_size: Minibatch size. When ``None``, the full flattened buffer is used.
+
+        Yields:
+            Batches of rollout samples with decompressed observations.
+        """
         assert self.full, ""
         indices = np.random.permutation(self.buffer_size * self.n_envs)
         # Prepare the data
@@ -190,6 +218,7 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         return RolloutBufferSamples(obs, *tuple(map(self.to_torch, data)))
 
     def reconstruct_obs(self, idx: int):
+        """Decompress the flattened observation at ``idx`` and move it to the device."""
         obs = self._decompress(self.observations[idx, 0]).reshape(self.obs_shape)
         return th.from_numpy(obs).to(self.device, th.float32)
 
@@ -216,6 +245,22 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
         compression_kwargs: Optional[dict] = None,
         decompression_kwargs: Optional[dict] = None,
     ):
+        """Create a compressed rollout buffer for dictionary observations.
+
+        Args:
+            buffer_size: Number of steps collected per environment before rollout ends.
+            observation_space: Gymnasium ``Dict`` observation space.
+            action_space: Gymnasium action space.
+            device: Torch device used when sampling batches.
+            gae_lambda: GAE lambda for advantage estimation.
+            gamma: Discount factor for returns.
+            n_envs: Number of parallel environments.
+            dtypes: Element and run-length dtypes for compression.
+            normalize_images: Divide image observations by 255 when sampling.
+            compression_method: Registered compression method name.
+            compression_kwargs: Keyword arguments for compression.
+            decompression_kwargs: Keyword arguments for decompression.
+        """
         # Avoid calling RolloutBuffer.reset which might be over-allocating memory for observations
         BaseBuffer.__init__(  # pylint: disable=non-parent-init-called
             self, buffer_size, observation_space, action_space, device, n_envs=n_envs
@@ -249,6 +294,7 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
         self.reset()
 
     def reset(self) -> None:
+        """Clear dict rollout storage and reset the write position."""
         self.observations = {}
         for key in self.obs_shape:
             self.observations[key] = np.empty((self.buffer_size, self.n_envs), dtype=object)
@@ -274,14 +320,15 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
         value: th.Tensor,
         log_prob: th.Tensor,
     ) -> None:
-        """:param obs: Observation
-        :param action: Action
-        :param reward:
-        :param episode_start: Start of episode signal.
-        :param value: estimated value of the current state
-            following the current policy.
-        :param log_prob: log probability of the action
-            following the current policy.
+        """Add a dict rollout step with compressed observations per key.
+
+        Args:
+            obs: Observation dict from the environment.
+            action: Action batch.
+            reward: Reward batch.
+            episode_start: Whether each environment started a new episode.
+            value: Value estimate for the current state under the policy.
+            log_prob: Log probability of the action under the policy.
         """
         if len(log_prob.shape) == 0:
             # Reshape 0-d tensor to avoid error
@@ -316,6 +363,14 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
             self.full = True
 
     def get(self, batch_size: Optional[int] = None) -> Generator[DictRolloutBufferSamples, None, None]:
+        """Yield shuffled dict rollout minibatches after the buffer is full.
+
+        Args:
+            batch_size: Minibatch size. When ``None``, the full flattened buffer is used.
+
+        Yields:
+            Batches of dict rollout samples with decompressed observations.
+        """
         assert self.full, ""
         indices = np.random.permutation(self.buffer_size * self.n_envs)
         # Prepare the data

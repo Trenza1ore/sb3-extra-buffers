@@ -1,3 +1,5 @@
+"""NumPy helpers for dtype selection and array reshaping."""
+
 import numpy as np
 
 _unsigned_int_types = [np.uint8, np.uint16, np.uint32, np.uint64]

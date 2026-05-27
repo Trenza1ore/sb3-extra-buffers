@@ -1,9 +1,13 @@
+"""Circular buffer for frames, rewards, actions, and optional features."""
+
 from typing import Optional
 
 import numpy as np
 
 
 class RecordBuffer:
+    """Store game frames and associated scalars in a fixed-size circular buffer."""
+
     def __init__(
         self,
         res: tuple[int, int] = (240, 320),
@@ -54,12 +58,15 @@ class RecordBuffer:
 
     # functions for ease of checking
     def __len__(self) -> int:
+        """Return the number of stored transitions."""
         return self._ptr + 1
 
     def __str__(self) -> str:
+        """Return a short summary of frame and reward dtypes."""
         return f"ReplayMemory(f:{self.dtype['frame']}, r:{self.dtype['reward']})"
 
     def __repr__(self) -> str:
+        """Return the same string as :meth:`__str__`."""
         return self.__str__()
 
     # add is replaced by add_filled after the memory has been filled once

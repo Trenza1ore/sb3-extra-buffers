@@ -1,3 +1,5 @@
+"""Base classes and helpers for compressed observation storage."""
+
 import re
 import warnings
 from functools import partial
@@ -20,6 +22,7 @@ if has_numba():
 else:
 
     def init_jit(*args, **kwargs):
+        """Raise when Numba is not installed."""
         raise ModuleNotFoundError(
             'Numba library doesn\'t seem to be installed, try installing via:\npip install "sb3-extra-buffers[numba]"'
         )
@@ -49,6 +52,15 @@ class BaseCompressedBuffer:
         decompression_kwargs: Optional[dict] = None,
         flatten_config: Optional[dict] = None,
     ):
+        """Configure compression and decompression callables.
+
+        Args:
+            compression_method: Registered method name (for example ``"rle"`` or ``"gzip"``).
+                When ``None``, compression is not configured.
+            compression_kwargs: Keyword arguments passed to the compressor.
+            decompression_kwargs: Keyword arguments passed to the decompressor.
+            flatten_config: Shape and dtype used when reconstructing flattened observations.
+        """
         self.version = __version__
         if compression_method is None:
             return
@@ -85,5 +97,8 @@ class BaseCompressedBuffer:
 
 
 class DummyCls:
+    """Placeholder type used when optional compression backends are unavailable."""
+
     def __init__(*args, **kwargs):
+        """Accept arbitrary arguments and perform no initialization."""
         pass

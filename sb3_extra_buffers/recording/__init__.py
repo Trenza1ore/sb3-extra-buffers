@@ -1,3 +1,5 @@
+"""Game-state recording buffers for debugging and analysis."""
+
 __all__ = [
     "BaseRecordBuffer",
     "RecordBuffer",

@@ -1,3 +1,5 @@
+"""Fill replay buffers before training using a warm-up policy."""
+
 from typing import Iterable, Optional, Union
 
 from stable_baselines3.common.base_class import BaseAlgorithm

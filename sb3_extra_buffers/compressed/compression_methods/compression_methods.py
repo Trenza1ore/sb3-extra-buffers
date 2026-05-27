@@ -1,3 +1,5 @@
+"""CPU compression and decompression method registry."""
+
 import gzip
 from collections import namedtuple
 
@@ -23,8 +25,10 @@ CompressionMethods = namedtuple("CompressionMethod", ["compress", "decompress"])
 
 
 def rle_compress(arr: np.ndarray, elem_type: np.dtype = np.uint8, runs_type: np.dtype = np.uint16) -> bytes:
-    """RLE Compression, credits:
-    https://stackoverflow.com/questions/1066758/find-length-of-sequences-of-identical-values-in-a-numpy-array-run-length-encodi/32681075#32681075.
+    """Run-length encode a 1D array.
+
+    Credits:
+        https://stackoverflow.com/questions/1066758/find-length-of-sequences-of-identical-values-in-a-numpy-array-run-length-encodi/32681075#32681075
     """
     n = arr.shape[0]
     y = arr[1:] != arr[:-1]
@@ -121,18 +125,22 @@ def no_decompress(data: bytes, *args, elem_type: np.dtype, **kwargs) -> np.ndarr
 
 
 def has_numba() -> bool:
+    """Return whether the Numba RLE backend is available."""
     return HAS_NUMBA
 
 
 def has_igzip() -> bool:
+    """Return whether the igzip backend is available."""
     return HAS_IGZIP
 
 
 def has_zstd() -> bool:
+    """Return whether the Zstandard backend is available."""
     return HAS_ZSTD
 
 
 def has_lz4() -> bool:
+    """Return whether the LZ4 backend is available."""
     return HAS_LZ4
 
 

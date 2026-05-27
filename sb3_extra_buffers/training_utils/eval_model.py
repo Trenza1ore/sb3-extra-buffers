@@ -1,3 +1,5 @@
+"""Roll out a policy for evaluation and optional buffer filling."""
+
 import gc
 import time
 from typing import Iterable, Union, get_args
@@ -17,6 +19,14 @@ except ImportError:
 
 
 def process_outcome(infos: list[dict]) -> tuple[np.ndarray[float], np.ndarray[bool]]:
+    """Extract episode rewards and done flags from vectorized env info dicts.
+
+    Args:
+        infos: Info dicts returned by ``VecEnv.step``.
+
+    Returns:
+        Episode return estimates (``nan`` when unavailable) and a boolean done mask.
+    """
     nan = float("nan")
     reward = np.asarray([info.get("episode", {}).get("r", nan) for info in infos], dtype=float)
     done = np.zeros_like(reward, dtype="?")
@@ -31,6 +41,18 @@ def eval_model(
     close_env: bool = True,
     buffer: Union[ReplayLike, Iterable[ReplayLike], None] = None,
 ) -> tuple[list[NumberType], list]:
+    """Run evaluation episodes and optionally fill replay buffers.
+
+    Args:
+        n_eps: Number of completed episodes to collect.
+        eval_env: Vectorized evaluation environment.
+        eval_model: Policy used for action selection.
+        close_env: Whether to close ``eval_env`` when finished.
+        buffer: Optional replay buffer(s) to fill with transitions.
+
+    Returns:
+        Episode returns and per-buffer time spent in ``add`` calls.
+    """
     if not (isinstance(buffer, Iterable) or (buffer is None)):
         buffer = [buffer]
     buffer_latency = [0.0] * len(buffer)

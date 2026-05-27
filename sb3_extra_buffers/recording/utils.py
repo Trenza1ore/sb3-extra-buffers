@@ -1,3 +1,5 @@
+"""Utilities for record buffer memory management."""
+
 from sb3_extra_buffers.recording.base import BaseRecordBuffer
 
 

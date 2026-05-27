@@ -1,3 +1,5 @@
+"""Zstandard compression helpers."""
+
 import numpy as np
 import zstd
 

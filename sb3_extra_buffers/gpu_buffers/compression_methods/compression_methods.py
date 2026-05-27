@@ -1,3 +1,5 @@
+"""Torch-based run-length compression into a GPU raw buffer."""
+
 from collections import namedtuple
 
 import torch as th
@@ -15,8 +17,10 @@ def rle_compress(
     elem_type: th.dtype = th.uint8,
     runs_type: th.dtype = th.uint16,
 ) -> tuple[int, int, int]:
-    """RLE Compression, credits:
-    https://stackoverflow.com/questions/1066758/find-length-of-sequences-of-identical-values-in-a-numpy-array-run-length-encodi/32681075#32681075.
+    """Run-length encode a 1D tensor into a ``RawBuffer``.
+
+    Credits:
+        https://stackoverflow.com/questions/1066758/find-length-of-sequences-of-identical-values-in-a-numpy-array-run-length-encodi/32681075#32681075
     """
     n = arr.size(0)
 
