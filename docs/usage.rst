@@ -20,62 +20,10 @@ For noisy RGB observations, prefer ``zstd`` first. Run-length encoding can still
 decompress quickly, but it may save much less memory and can even increase
 storage for highly varied inputs.
 
-Compression methods
--------------------
+Compression algorithms
+----------------------
 
-Compressed buffers accept registered compression method names through the
-``compression_method`` argument.
-
-Common choices:
-
-- ``none`` stores raw bytes after dtype conversion.
-- ``rle`` uses NumPy run-length encoding.
-- ``rle-jit`` uses the numba-backed run-length encoder.
-- ``gzip`` uses Python's standard gzip backend.
-- ``igzip`` uses Intel's accelerated gzip backend when ``isal`` is installed.
-- ``zstd`` uses Zstandard and is a strong default for noisy image observations.
-- ``lz4-frame`` and ``lz4-block`` use lz4 backends.
-
-The recommended starting point from the benchmark is ``zstd-3``. For very sparse
-or palette-like observations, ``rle`` and ``rle-jit`` are worth testing as well.
-
-Compression levels can be included as shorthand strings:
-
-.. code-block:: python
-
-   compression_method = "zstd-3"
-   compression_method = "igzip1"
-   compression_method = "lz4-frame/5"
-
-Supported level ranges:
-
-- ``gzip`` supports levels ``0`` through ``9``.
-- ``igzip`` supports levels ``0`` through ``3``.
-- ``zstd`` supports standard levels ``1`` through ``22`` and ultra-fast levels
-  ``-100`` through ``-1``.
-- ``lz4-frame`` supports standard levels ``0`` through ``16``; negative levels
-  map to acceleration factors.
-- ``lz4-block`` supports default mode at ``0``, high-compression mode from
-  ``1`` through ``12``, and fast mode through negative levels.
-
-For lz4 methods, include the slash before the level, for example
-``lz4-frame/5``. For the other methods, both explicit and compact forms are
-accepted by the parser, such as ``igzip/3`` and ``igzip3``.
-
-Optional backends
------------------
-
-Install optional extras for faster or additional compression implementations:
-
-.. code-block:: bash
-
-   pip install "sb3-extra-buffers[fast]"
-
-The ``fast`` extra installs ``isal``, ``numba``, ``zstd``, and ``lz4``.
-
-If an optional backend is unavailable, the package either falls back to a
-compatible implementation or raises a clear import error for explicit JIT
-initialization.
+See :doc:`algorithms`
 
 Buffer dtype settings
 ---------------------

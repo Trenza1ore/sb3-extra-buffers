@@ -42,6 +42,7 @@ vizdoom = ["stable_baselines3[extra]", "vizdoom"]
 [project.urls]
 Homepage = "https://compressed-rl.readthedocs.io"
 Documentation = "https://compressed-rl.readthedocs.io"
+Changelog = "https://compressed-rl.readthedocs.io/latest/changelog.html"
 "Source Code" = "https://github.com/Trenza1ore/sb3-extra-buffers"
 "Stable-Baselines3" = "https://github.com/DLR-RM/stable-baselines3"
 "Stable-Baselines3 - Contrib" = "https://github.com/Stable-Baselines-Team/stable-baselines3-contrib"

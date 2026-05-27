@@ -1,12 +1,16 @@
 # Changelog
 
-## [0.4.5](https://github.com/Trenza1ore/sb3-extra-buffers/releases/tag/v0.4.5) — 2026-05-27
+## [0.5.0](https://github.com/Trenza1ore/sb3-extra-buffers/releases/tag/v0.5.0) — 2026-05-27
 
-Changes since `0.4.4`…`0.4.5`.
+Changes since `0.4.4`…`0.5.0`.
 
 ### Feature
 
 - Added compressed version for `DictReplayBuffer` and `DictRolloutBuffer`.
+
+### Documentation
+
+- New Sphinx documentation hosted at [https://compressed-rl.readthedocs.io](https://compressed-rl.readthedocs.io)
 
 ### Breaking Changes
 
@@ -143,6 +147,3 @@ Changes since `0.2.2`…`0.2.3`.
 Initial release `0.2.2`.
 
 First stable-ish version, implemented replay / rollout buffer support.
-
----
-

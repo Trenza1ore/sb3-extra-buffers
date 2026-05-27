@@ -35,13 +35,19 @@ Optional extras can be installed individually:
    pip install "sb3-extra-buffers[lz4]"
    pip install "sb3-extra-buffers[vizdoom]"
 
+Choosing compression algorithm
+------------------------------
+
+Check :doc:`algorithms`
+
+
 Choosing dtypes
 ---------------
 
 Compressed buffers store flattened observations and, for RLE-style compression,
-run lengths. :func:`~sb3_extra_buffers.compressed.find_buffer_dtypes` chooses a
-small integer dtype for run lengths based on the observation shape. When using
-``rle-jit``, the same helper also initializes the numba implementation.
+run lengths. :func:`~sb3_extra_buffers.compressed.find_buffer_dtypes` is a convenient
+helper function that chooses a small integer dtype for you based on the observation shape.
+When using ``rle-jit``, the same helper also initializes ``numba``.
 
 .. code-block:: python
 
@@ -128,7 +134,6 @@ compression and multiprocessing environments are used together.
            ent_coef=0.01,
            vf_coef=0.5,
            seed=1970626835,
-           device="mps",
            rollout_buffer_class=CompressedRolloutBuffer,
            rollout_buffer_kwargs={
                "dtypes": buffer_dtypes,

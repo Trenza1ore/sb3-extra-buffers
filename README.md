@@ -1,4 +1,4 @@
-[![PyPI - Version](https://img.shields.io/pypi/v/sb3-extra-buffers)](https://pypi.org/project/sb3-extra-buffers/) [![Pepy Total Downloads](https://img.shields.io/pepy/dt/sb3-extra-buffers?uuid=f104370f78d6424285548563e8ea9029)](https://pepy.tech/projects/sb3-extra-buffers) ![PyPI - License](https://img.shields.io/pypi/l/sb3-extra-buffers) ![PyPI - Implementation](https://img.shields.io/pypi/implementation/sb3-extra-buffers?style=flat) [![Tests](https://github.com/Trenza1ore/sb3-extra-buffers/actions/workflows/tests.yml/badge.svg)](https://github.com/Trenza1ore/sb3-extra-buffers/actions/workflows/tests.yml)
+[![PyPI - Version](https://img.shields.io/pypi/v/sb3-extra-buffers)](https://pypi.org/project/sb3-extra-buffers/) [![Pepy Total Downloads](https://img.shields.io/pepy/dt/sb3-extra-buffers?uuid=f104370f78d6424285548563e8ea9029)](https://pepy.tech/projects/sb3-extra-buffers) [![PyPI - License](https://img.shields.io/pypi/l/sb3-extra-buffers)](https://github.com/Trenza1ore/sb3-extra-buffers/blob/main/LICENSE) [![Tests](https://github.com/Trenza1ore/sb3-extra-buffers/actions/workflows/tests.yml/badge.svg)](https://github.com/Trenza1ore/sb3-extra-buffers/actions/workflows/tests.yml)
 
 # sb3-extra-buffers
 Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to reduce memory usage drastically with minimal overhead. Featured in [SB3 docs](https://stable-baselines3.readthedocs.io/en/master/misc/projects.html#sb3-extra-buffers-ram-expansions-are-overrated-just-compress-your-observations) :-)
@@ -13,7 +13,7 @@ Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to red
 - [RL Baselines3 Zoo (training framework for SB3)](https://github.com/DLR-RM/rl-baselines3-zoo)
 
 **Description:**
-Tired of reading a cool RL paper and realizing that the author is storing a **MILLION** observations in their replay buffers? Yeah me too. This project has implemented several compressed buffer classes that replace Stable Baselines3's standard buffers like ReplayBuffer and RolloutBuffer. With as simple as 2-5 lines of extra code and **negligible overhead**, memory usage can be reduced by more than **95%**!
+Tired of reading a cool RL paper and realizing that the author is storing a **MILLION** observations in their replay buffers? Yeah me too. This project has implemented several compressed buffer classes that replace Stable Baselines3's standard buffers like ReplayBuffer and RolloutBuffer. With as simple as 2-5 lines of extra code and **negligible overhead**, memory usage can be reduced by more than **95%**! Please consider [citing this project](#cite-this-project) if this is helpful to your research :-)
 
 **Main Goal:**
 Reduce the memory consumption of memory buffers in Reinforcement Learning while adding minimal overhead.
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     # Create PPO model with CompressedRolloutBuffer as rollout buffer class
     model = PPO("CnnPolicy", env, verbose=1, learning_rate=get_linear_fn(2.5e-4, 0, 1), n_steps=128,
                 batch_size=256, clip_range=get_linear_fn(0.1, 0, 1), n_epochs=4, ent_coef=0.01, vf_coef=0.5,
-                seed=1970626835, device="mps", rollout_buffer_class=CompressedRolloutBuffer,
+                seed=1970626835, rollout_buffer_class=CompressedRolloutBuffer,
                 rollout_buffer_kwargs=dict(dtypes=buffer_dtypes, compression_method=compression))
 
     # Evaluation callback (optional)

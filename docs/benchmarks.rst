@@ -1,8 +1,8 @@
 Benchmarks
 ==========
 
-The README benchmark compares compressed buffers against the Stable-Baselines3
-baseline on ``MsPacmanNoFrameskip-v4``.
+This benchmark compared compressed buffers against the Stable-Baselines3
+(pre-2.7.1) baseline on ``MsPacmanNoFrameskip-v4``.
 
 Benchmark setup
 ---------------
@@ -12,8 +12,7 @@ Benchmark setup
 - Buffer size: ``40,000`` transitions, split across vectorized environments.
 - Hardware: M4 MacBook Air.
 - Saving test: the same observations are added to each buffer for fairness.
-- Loading test: rollout-buffer trajectories are sampled with batch size ``64``
-  on ``mps``.
+- Loading test: rollout-buffer trajectories are sampled with batch size ``64``.
 - Baseline: SB3 ``ReplayBuffer`` or ``RolloutBuffer`` without compression.
 
 Important caveats:
@@ -259,3 +258,11 @@ Results
      - 51.0MB
      - 1.2%
      - 8.96
+
+Training validation
+-------------------
+
+The table above measures buffer memory and sampling latency. To confirm that
+compressed buffers work end-to-end in SB3 training, see
+:doc:`validation` for evaluation results from the example PPO and DQN scripts
+(10M steps on Atari with ``rle-jit``).
