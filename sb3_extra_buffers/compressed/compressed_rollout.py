@@ -16,6 +16,12 @@ from stable_baselines3.common.buffers import (
 
 from sb3_extra_buffers import sb3_version
 from sb3_extra_buffers.compressed.base import BaseCompressedBuffer
+from sb3_extra_buffers.logging import logger
+
+# SB3 2.7.1 fixed rollout buffer's observation storage datatype
+# For backwards compatibility, use float32 for older versions
+# https://github.com/DLR-RM/stable-baselines3/pull/2163
+LEGACY_BEHAVIOR = sb3_version() < (2, 7, 1)
 
 
 class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
@@ -70,7 +76,10 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         self.generator_ready = False
         self.normalize_images = normalize_images
         self.flatten_len = np.prod(self.obs_shape)
-        self.flatten_config = dict(shape=self.flatten_len, dtype=np.float32)
+        if LEGACY_BEHAVIOR:
+            self.flatten_config = dict(shape=self.flatten_len, dtype=np.float32)
+        else:
+            self.flatten_config = dict(shape=self.flatten_len, dtype=observation_space.dtype)
 
         # Handle dtypes
         self.dtypes = dtypes or dict(elem_type=np.uint8, runs_type=np.uint16)
@@ -426,10 +435,7 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
         return th.from_numpy(obs).to(self.device)
 
 
-# SB3 2.7.1 fixed rollout buffer's observation storage datatype
-# For backwards compatibility, use float32 for older versions
-# https://github.com/DLR-RM/stable-baselines3/pull/2163
-if sb3_version() < (2, 7, 1):
+if LEGACY_BEHAVIOR:
 
     def legacy_reconstruct_obs(self, idx: int):
         """Decompress the flattened observation at ``idx`` and move it to the device."""
@@ -437,3 +443,8 @@ if sb3_version() < (2, 7, 1):
         return th.from_numpy(obs).to(self.device, dtype=th.float32)
 
     CompressedRolloutBuffer.reconstruct_obs = legacy_reconstruct_obs
+    logger.warning(
+        "Legacy Stable Baselines3 version %s detected, CompressedRolloutBuffer will always use data type float32 "
+        "for returned observations.",
+        sb3_version(),
+    )
