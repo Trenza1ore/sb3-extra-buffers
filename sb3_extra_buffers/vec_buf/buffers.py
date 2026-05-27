@@ -43,7 +43,7 @@ class DummyVecRolloutBuffer(RolloutBuffer):
     def __del__(self):
         try:
             self._executor.shutdown(cancel_futures=True)
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             del self._executor
 
     @property

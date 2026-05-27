@@ -115,7 +115,7 @@ if __name__ == "__main__":
     del vec_buffer, model
     try:
         getattr(th, device).empty_cache()
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(e)
     gc.collect()
     time.sleep(10)

@@ -92,10 +92,8 @@ def eval_model(
         pbar.set_description_str(f"Cleaning {eval_device_type} cache")
         try:
             getattr(th, eval_device_type).empty_cache()
-        except Exception as e:
-            logger.warning(
-                f"Failed to clean cache by calling torch.{eval_device_type}.empty_cache(): {e}"
-            )
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.warning("Failed to clean cache by calling torch.%s.empty_cache(): %s", eval_device_type, e)
 
     # Garbage collection
     pbar.set_description_str("Garbage collection")
