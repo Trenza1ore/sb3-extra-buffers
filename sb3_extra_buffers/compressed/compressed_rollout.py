@@ -7,6 +7,7 @@ from gymnasium import spaces
 from stable_baselines3.common.buffers import (
     BaseBuffer,
     RolloutBuffer,
+    DictRolloutBufferSamples,
     RolloutBufferSamples,
     VecNormalize,
 )
@@ -221,8 +222,43 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
         gae_lambda: float = 1,
         gamma: float = 0.99,
         n_envs: int = 1,
+        dtypes: Optional[dict] = None,
+        normalize_images: bool = False,
+        compression_method: str = "rle",
+        compression_kwargs: Optional[dict] = None,
+        decompression_kwargs: Optional[dict] = None,
     ):
-        raise NotImplementedError("Not yet implemented")
+        # Avoid calling RolloutBuffer.reset which might be over-allocating memory for observations
+        BaseBuffer.__init__(  # pylint: disable=non-parent-init-called
+            self, buffer_size, observation_space, action_space, device, n_envs=n_envs
+        )
+        assert isinstance(self.obs_shape, dict), "DictRolloutBuffer must be used with Dict obs space only"
+        self.gae_lambda = gae_lambda
+        self.gamma = gamma
+        self.generator_ready = False
+        self.normalize_images = normalize_images
+        self.flatten_configs = {
+            key: dict(shape=np.prod(obs_shape), dtype=observation_space[key].dtype)
+            for key, obs_shape in self.obs_shape.items()
+        }
+
+        # Handle dtypes
+        self.dtypes = dtypes or dict(elem_type=np.uint8, runs_type=np.uint16)
+        if not isinstance(self.dtypes, dict):
+            elem_type = self.dtypes
+            self.dtypes = dict(elem_type=elem_type, runs_type=elem_type)
+
+        # Compress and decompress
+        self.compression_kwargs = compression_kwargs or self.dtypes
+        self.decompression_kwargs = decompression_kwargs or self.dtypes
+        BaseCompressedBuffer.__init__(  # pylint: disable=non-parent-init-called
+            self,
+            compression_method=compression_method,
+            compression_kwargs=self.compression_kwargs,
+            decompression_kwargs=self.decompression_kwargs,
+            flatten_config=next(iter(self.flatten_configs.values())),
+        )
+        self.reset()
 
     def reset(self) -> None:
         self.observations = {}
@@ -243,4 +279,120 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
         self.log_probs = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.advantages = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.generator_ready = False
-        super(CompressedRolloutBuffer, self).reset()
+        BaseBuffer.reset(self)
+
+    def add(
+        self,
+        obs: dict[str, np.ndarray],
+        action: np.ndarray,
+        reward: np.ndarray,
+        episode_start: np.ndarray,
+        value: th.Tensor,
+        log_prob: th.Tensor,
+    ) -> None:
+        """
+        :param obs: Observation
+        :param action: Action
+        :param reward:
+        :param episode_start: Start of episode signal.
+        :param value: estimated value of the current state
+            following the current policy.
+        :param log_prob: log probability of the action
+            following the current policy.
+        """
+        if len(log_prob.shape) == 0:
+            # Reshape 0-d tensor to avoid error
+            log_prob = log_prob.reshape(-1, 1)
+
+        elem_type = self.dtypes["elem_type"]
+        elem_is_int = np.issubdtype(elem_type, np.integer)
+        elem_type_info = np.iinfo(elem_type) if elem_is_int else np.finfo(elem_type)
+        elem_min, elem_max = elem_type_info.min, elem_type_info.max
+
+        # Compress everything
+        for key in self.observations:
+            obs_ = obs[key]
+            if isinstance(self.observation_space.spaces[key], spaces.Discrete):
+                obs_ = obs_.reshape((self.n_envs,) + self.obs_shape[key])
+            if isinstance(obs_, th.Tensor):
+                obs_ = (
+                    th.clamp(obs_, elem_min, elem_max)
+                    .cpu()
+                    .numpy()
+                    .astype(elem_type, casting="unsafe")
+                )
+            else:
+                obs_ = np.clip(obs_, elem_min, elem_max, dtype=elem_type, casting="unsafe")
+            self.observations[key][self.pos] = [
+                self._compress(env_obs.ravel()) for env_obs in obs_
+            ]
+
+        # Reshape to handle multi-dim and discrete action spaces, see GH #970 #1392
+        action = action.reshape((self.n_envs, self.action_dim))
+
+        self.actions[self.pos] = np.array(action)
+        self.rewards[self.pos] = np.array(reward)
+        self.episode_starts[self.pos] = np.array(episode_start)
+        self.values[self.pos] = value.clone().cpu().numpy().flatten()
+        self.log_probs[self.pos] = log_prob.clone().cpu().numpy()
+        self.pos += 1
+        if self.pos == self.buffer_size:
+            self.full = True
+
+    def get(
+        self, batch_size: Optional[int] = None
+    ) -> Generator[DictRolloutBufferSamples, None, None]:
+        assert self.full, ""
+        indices = np.random.permutation(self.buffer_size * self.n_envs)
+        # Prepare the data
+        if not self.generator_ready:
+            for key, obs in self.observations.items():
+                self.observations[key] = self.swap_and_flatten(obs)
+
+            _tensor_names = ["actions", "values", "log_probs", "advantages", "returns"]
+
+            for tensor in _tensor_names:
+                self.__dict__[tensor] = self.swap_and_flatten(self.__dict__[tensor])
+            self.generator_ready = True
+
+        # Return everything, don't create minibatches
+        if batch_size is None:
+            batch_size = self.buffer_size * self.n_envs
+
+        start_idx = 0
+        while start_idx < self.buffer_size * self.n_envs:
+            yield self._get_samples(indices[start_idx : start_idx + batch_size])
+            start_idx += batch_size
+
+    def _get_samples(
+        self,
+        batch_inds: np.ndarray,
+        env: Optional[VecNormalize] = None,
+    ) -> DictRolloutBufferSamples:
+        observations = {}
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore",
+                message="The given NumPy array is not writable.*",
+                category=UserWarning,
+            )
+            for key in self.observations:
+                observations[key] = th.stack(
+                    [self._reconstruct_obs(i, key) for i in batch_inds]
+                )
+        if self.normalize_images:
+            observations = {key: obs / 255.0 for key, obs in observations.items()}
+        data = (
+            self.actions[batch_inds].astype(np.float32, copy=False),
+            self.values[batch_inds].ravel(),
+            self.log_probs[batch_inds].ravel(),
+            self.advantages[batch_inds].ravel(),
+            self.returns[batch_inds].ravel(),
+        )
+        return DictRolloutBufferSamples(observations, *tuple(map(self.to_torch, data)))
+
+    def _reconstruct_obs(self, idx: int, key: str):
+        obs = self._decompress(
+            self.observations[key][idx, 0], arr_configs=self.flatten_configs[key]
+        ).reshape(self.obs_shape[key])
+        return th.from_numpy(obs).to(self.device)
