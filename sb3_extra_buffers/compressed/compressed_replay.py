@@ -36,7 +36,7 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
         compression_method: str = "rle",
         compression_kwargs: Optional[dict] = None,
         decompression_kwargs: Optional[dict] = None,
-        output_dtype: Literal["raw", "float"] = "float",
+        output_dtype: Literal["raw", "float"] = "raw",
     ):
         # Avoid calling ReplayBuffer.__init__ which might be over-allocating memory for observations
         BaseBuffer.__init__(
