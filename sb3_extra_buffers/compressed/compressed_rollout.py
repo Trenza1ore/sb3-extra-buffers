@@ -43,7 +43,7 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         decompression_kwargs: Optional[dict] = None,
     ):
         # Avoid calling RolloutBuffer.reset which might be over-allocating memory for observations
-        BaseBuffer.__init__(
+        BaseBuffer.__init__(  # pylint: disable=non-parent-init-called
             self, buffer_size, observation_space, action_space, device, n_envs=n_envs
         )
         self.gae_lambda = gae_lambda
@@ -232,7 +232,7 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
         BaseBuffer.__init__(  # pylint: disable=non-parent-init-called
             self, buffer_size, observation_space, action_space, device, n_envs=n_envs
         )
-        assert isinstance(self.obs_shape, dict), "DictRolloutBuffer must be used with Dict obs space only"
+        assert isinstance(self.obs_shape, dict), "CompressedDictRolloutBuffer must be used with Dict obs space only"
         self.gae_lambda = gae_lambda
         self.gamma = gamma
         self.generator_ready = False

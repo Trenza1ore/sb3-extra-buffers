@@ -39,7 +39,7 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
         output_dtype: Literal["raw", "float"] = "raw",
     ):
         # Avoid calling ReplayBuffer.__init__ which might be over-allocating memory for observations
-        BaseBuffer.__init__(
+        BaseBuffer.__init__(  # pylint: disable=non-parent-init-called
             self, buffer_size, observation_space, action_space, device, n_envs=n_envs
         )
         self.normalize_images = normalize_images
@@ -73,7 +73,7 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
         # see https://github.com/DLR-RM/stable-baselines3/issues/934
         if optimize_memory_usage and handle_timeout_termination:
             raise ValueError(
-                "ReplayBuffer does not support optimize_memory_usage = True "
+                "CompressedReplayBuffer does not support optimize_memory_usage = True "
                 "and handle_timeout_termination = True simultaneously."
             )
         self.optimize_memory_usage = optimize_memory_usage
@@ -305,8 +305,8 @@ class CompressedDictReplayBuffer(CompressedReplayBuffer):
         BaseBuffer.__init__(  # pylint: disable=non-parent-init-called
             self, buffer_size, observation_space, action_space, device, n_envs=n_envs
         )
-        assert isinstance(self.obs_shape, dict), "DictReplayBuffer must be used with Dict obs space only"
-        assert not optimize_memory_usage, "DictReplayBuffer does not support optimize_memory_usage"
+        assert isinstance(self.obs_shape, dict), "CompressedDictReplayBuffer must be used with Dict obs space only"
+        assert not optimize_memory_usage, "CompressedDictReplayBuffer does not support optimize_memory_usage"
         self.normalize_images = normalize_images
         self.flatten_configs = {
             key: dict(shape=np.prod(obs_shape), dtype=observation_space[key].dtype)
