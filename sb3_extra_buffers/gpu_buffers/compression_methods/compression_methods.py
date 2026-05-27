@@ -87,4 +87,4 @@ COMPRESSION_METHOD_MAP: dict[str, CompressionMethods] = {
     "rle": CompressionMethods(compress=rle_compress, decompress=rle_decompress),
 }
 
-logger.info(f"Loaded GPU compression methods:\n{', '.join(COMPRESSION_METHOD_MAP)}")
+logger.info("Loaded GPU compression methods:\n%s", ', '.join(COMPRESSION_METHOD_MAP))
