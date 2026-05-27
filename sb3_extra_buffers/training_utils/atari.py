@@ -21,7 +21,7 @@ def make_env(
     vec_env_cls: VecEnv = SubprocVecEnv,
     framestack: int = 4,
     seed: Optional[int] = None,
-    **kwargs
+    **kwargs,
 ) -> VecEnvWrapper:
     gym.register_envs(ale_py)
     if n_envs == 1:

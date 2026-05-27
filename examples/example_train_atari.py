@@ -10,9 +10,7 @@ ATARI_GAME = "MsPacmanNoFrameskip-v4"
 if __name__ == "__main__":
     obs = make_env(env_id=ATARI_GAME, n_envs=1, framestack=4).observation_space
     compression = "rle-jit"
-    buffer_dtypes = find_buffer_dtypes(
-        obs_shape=obs.shape, elem_dtype=obs.dtype, compression_method=compression
-    )
+    buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype, compression_method=compression)
 
     env = make_env(env_id=ATARI_GAME, n_envs=8, framestack=4)
     eval_env = make_env(env_id=ATARI_GAME, n_envs=10, framestack=4)
@@ -32,9 +30,7 @@ if __name__ == "__main__":
         seed=1970626835,
         device="mps",
         rollout_buffer_class=CompressedRolloutBuffer,
-        rollout_buffer_kwargs=dict(
-            dtypes=buffer_dtypes, compression_method=compression
-        ),
+        rollout_buffer_kwargs=dict(dtypes=buffer_dtypes, compression_method=compression),
     )
 
     # Evaluation callback (optional)

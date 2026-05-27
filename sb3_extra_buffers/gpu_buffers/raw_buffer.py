@@ -29,18 +29,12 @@ class RawBuffer:
 
     def write_bytes(self, malloc: tuple[int, int], tensor: th.Tensor):
         dstart, dlength = malloc
-        th.tensor([], dtype=tensor.dtype, device=self.device).set_(
-            self.buffer, dstart, (dlength,)
-        )[:] = tensor
+        th.tensor([], dtype=tensor.dtype, device=self.device).set_(self.buffer, dstart, (dlength,))[:] = tensor
 
     def read_bytes(self, malloc: tuple[int, int], dtype: th.dtype):
         dstart, dlength = malloc
-        return th.tensor([], dtype=dtype, device=self.device).set_(
-            self.buffer, dstart, (dlength,)
-        )
+        return th.tensor([], dtype=dtype, device=self.device).set_(self.buffer, dstart, (dlength,))
 
     def read_into(self, malloc: tuple[int, int], tensor: th.Tensor):
         dstart, dlength = malloc
-        tensor[:dlength] = th.tensor([], dtype=tensor.dtype, device=self.device).set_(
-            self.buffer, dstart, (dlength,)
-        )
+        tensor[:dlength] = th.tensor([], dtype=tensor.dtype, device=self.device).set_(self.buffer, dstart, (dlength,))

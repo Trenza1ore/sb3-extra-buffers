@@ -8,7 +8,7 @@ from sb3_extra_buffers.compressed.utils import find_smallest_dtype
 
 
 class CompressedArray(np.ndarray, BaseCompressedBuffer):
-    """Experimental Compressed Array Class"""
+    """Experimental Compressed Array Class."""
 
     def __init__(
         self,
@@ -23,16 +23,14 @@ class CompressedArray(np.ndarray, BaseCompressedBuffer):
         compression_method: str = "rle",
         compression_kwargs: Optional[dict] = None,
         decompression_kwargs: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ):
         self.obs_shape = obs_shape
         flatten_len = np.prod(obs_shape)
         self.flatten_config = dict(shape=flatten_len, dtype=dtype)
 
         # Handle dtypes
-        self.dtypes = dtypes or dict(
-            elem_type=dtype, runs_type=find_smallest_dtype(flatten_len)
-        )
+        self.dtypes = dtypes or dict(elem_type=dtype, runs_type=find_smallest_dtype(flatten_len))
         self._dtype = dtype
 
         # Compress and decompress
@@ -61,7 +59,7 @@ class CompressedArray(np.ndarray, BaseCompressedBuffer):
         compression_method: str = "rle",
         compression_kwargs: Optional[dict] = None,
         decompression_kwargs: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ):
         self = super().__new__(
             cls,

@@ -15,7 +15,7 @@ def warm_up(
     warmup_episodes: Optional[int] = None,
     mean_ep_len: Union[int, float, None] = None,
 ) -> tuple[list[NumberType], list[NumberType]]:
-    """Perform buffer warm up with set model"""
+    """Perform buffer warm up with set model."""
     if not (isinstance(buffer, Iterable) or (buffer is None)):
         buffer = [buffer]
     # Calculate/validate number of episodes for buffer warm-up
@@ -27,12 +27,10 @@ def warm_up(
 
     # Check compatibility of vectorized environments
     warmup_n_envs = warmup_env.num_envs
-    assert (
-        warmup_episodes >= warmup_n_envs
-    ), f"Number of environments ({warmup_n_envs}) > episodes ({warmup_episodes})!"
-    assert (
-        warmup_n_envs % n_envs == 0 and warmup_n_envs >= n_envs
-    ), f"warmup_n_envs value ({warmup_n_envs}) incompatible with n_envs ({n_envs})"
+    assert warmup_episodes >= warmup_n_envs, f"Number of environments ({warmup_n_envs}) > episodes ({warmup_episodes})!"
+    assert warmup_n_envs % n_envs == 0 and warmup_n_envs >= n_envs, (
+        f"warmup_n_envs value ({warmup_n_envs}) incompatible with n_envs ({n_envs})"
+    )
 
     mean_reward, buffer_latency = eval_model(
         n_eps=warmup_episodes,

@@ -53,3 +53,26 @@ version = {file = "sb3_extra_buffers/version.txt"}
 
 [tool.setuptools.package-data]
 sb3_extra_buffers = ["version.txt", "py.typed"]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = ["-v"]
+
+# Formatting
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.pylint.MAIN]
+ignore-paths = ["^(examples|tests|docs|scripts)/.*"]
+py-version = "3.9"
+
+[tool.pylint.FORMAT]
+max-line-length = 120

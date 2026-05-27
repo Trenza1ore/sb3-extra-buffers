@@ -3,7 +3,7 @@ from sb3_extra_buffers.recording.record_buffer import RecordBuffer
 
 
 class DummyRecordBuffer(BaseRecordBuffer):
-    """A dummy RecordBuffer that does not record anything"""
+    """A dummy RecordBuffer that does not record anything."""
 
     def __init__(self) -> None:
         self._ptr = -1
@@ -14,7 +14,7 @@ class DummyRecordBuffer(BaseRecordBuffer):
 
 
 class FramelessRecordBuffer(BaseRecordBuffer):
-    """A dummy RecordBuffer that does not record actual game frames"""
+    """A dummy RecordBuffer that does not record actual game frames."""
 
     def __init__(self, *args, **kwargs) -> None:
         for fixed_value in ["res", "ch_num"]:

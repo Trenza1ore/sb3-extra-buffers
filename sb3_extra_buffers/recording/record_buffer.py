@@ -19,6 +19,7 @@ class RecordBuffer:
             size (int): maximum size, starts deleting old memories after maximum reached. Defaults to 40000.
             dtypes (list[object]): data type of frame, reward and (if any) features, datatype for features
             should be passed in as strings like "np.uint8" or "bool". Defaults to [np.uint8, np.float32].
+
         """
         self.max_size = size
         self.max_index = size - 1
@@ -35,16 +36,11 @@ class RecordBuffer:
             self.feature_num = len(self.dtype["features"])
             self.use_features = True
             if len(set(self.dtype["features"])) == 1:
-                self.features = np.zeros(
-                    (size, self.feature_num), dtype=self.dtype["features"][0]
-                )
+                self.features = np.zeros((size, self.feature_num), dtype=self.dtype["features"][0])
             else:
                 self.features = np.zeros(
                     size,
-                    dtype=[
-                        (str(i), self.dtype["features"][i])
-                        for i in range(self.feature_num)
-                    ],
+                    dtype=[(str(i), self.dtype["features"][i]) for i in range(self.feature_num)],
                 )
         else:
             self.feature_num = 0
@@ -74,7 +70,7 @@ class RecordBuffer:
         action: np.uint8,
         features: tuple = None,
     ):
-        """Add a single state into memory"""
+        """Add a single state into memory."""
         if self._ptr < self.max_index:
             self._ptr += 1
         else:
@@ -93,7 +89,7 @@ class RecordBuffer:
         action: np.uint8,
         features: tuple,
     ):
-        """Add a single state into memory"""
+        """Add a single state into memory."""
         self._ptr = self._ptr + 1 if self._ptr < self.max_index else 0
         self.frames[self._ptr, :, :, :] = frame.transpose(2, 0, 1)
         self.rewards[self._ptr] = reward

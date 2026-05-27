@@ -57,9 +57,7 @@ COMPRESSION_METHODS = [
 if __name__ == "__main__":
     device = "mps" if th.mps.is_available() else "auto"
     render_mode = "human" if RENDER_GAMES else "rgb_array"
-    vec_env = make_env(
-        env_id=ATARI_GAME, n_envs=N_ENVS, framestack=FRAMESTACK, render_mode=render_mode
-    )
+    vec_env = make_env(env_id=ATARI_GAME, n_envs=N_ENVS, framestack=FRAMESTACK, render_mode=render_mode)
     vec_env_obs = vec_env.observation_space
     buffer_dtype = find_buffer_dtypes(vec_env_obs.shape, compression_method="rle-jit")
     if CLEAR_SCREEN:
@@ -94,16 +92,12 @@ if __name__ == "__main__":
         device=device,
         custom_objects=dict(replay_buffer_class=DummyCls),
     )
-    eval_rewards, buffer_latency = eval_model(
-        N_EVAL_EPISODES, vec_env, model, close_env=True, buffer=all_buffers
-    )
+    eval_rewards, buffer_latency = eval_model(N_EVAL_EPISODES, vec_env, model, close_env=True, buffer=all_buffers)
     Q1, Q2, Q3 = (round(np.percentile(eval_rewards, x)) for x in [25, 50, 75])
     reward_avg, reward_std = np.mean(eval_rewards), np.std(eval_rewards)
     reward_min, reward_max = round(np.min(eval_rewards)), round(np.max(eval_rewards))
     relative_IQR = (Q3 - Q1) / Q2
-    print(
-        f"Evaluated {N_EVAL_EPISODES} episodes, mean reward: {reward_avg:.1f} +/- {reward_std:.2f}"
-    )
+    print(f"Evaluated {N_EVAL_EPISODES} episodes, mean reward: {reward_avg:.1f} +/- {reward_std:.2f}")
     print(
         f"Q1: {Q1:4d} | Q2: {Q2:4d} | Q3: {Q3:4d} | Relative IQR: {relative_IQR:4.2f}",
         end=" | ",
@@ -132,11 +126,7 @@ if __name__ == "__main__":
             size /= 1024
             if size < 1024:
                 if size < 100:
-                    size_str = (
-                        f"{size:4.1f}{size_unit}B"
-                        if size > 10
-                        else f"{size:4.2f}{size_unit}B"
-                    )
+                    size_str = f"{size:4.1f}{size_unit}B" if size > 10 else f"{size:4.2f}{size_unit}B"
                 else:
                     size_str = f"{round(size):4d}{size_unit}B"
                 break
@@ -145,7 +135,7 @@ if __name__ == "__main__":
         assert v.full, f"Buffer not filled! pos: {v.pos}"
         pos = int(v.pos + v.observations.shape[0])
         if k == "baseline":
-            print(f"{pos} steps for each env, {4*pos} steps in total.")
+            print(f"{pos} steps for each env, {4 * pos} steps in total.")
         # else:
         #     np.save(f"{save_dir}/{k.replace('/', '-')}.npy", buffer)
         del buffer_dict[k], buffer, v
@@ -154,6 +144,6 @@ if __name__ == "__main__":
 
     # Print out formatted table
     print(f"|{'Compression':^17s}|{'Memory':^8s}|{'Memory %':^8s}|{'Latency':^10s}|")
-    print(f"|{'-'*17}|{'-'*8}|{'-'*8}|{'-'*10}|")
+    print(f"|{'-' * 17}|{'-' * 8}|{'-' * 8}|{'-' * 10}|")
     for k, v in sorted(sort_dict.items(), key=lambda x: x[1]):
         print(k)

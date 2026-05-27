@@ -3,12 +3,15 @@ import os
 import numpy as np
 import pytest
 import torch
+from gymnasium import spaces
 from stable_baselines3 import DQN, PPO
 from stable_baselines3 import __version__ as sb3_version
 from stable_baselines3.common.buffers import ReplayBuffer, RolloutBuffer
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 from sb3_extra_buffers.compressed import (
+    CompressedDictReplayBuffer,
+    CompressedDictRolloutBuffer,
     CompressedReplayBuffer,
     CompressedRolloutBuffer,
     find_buffer_dtypes,
@@ -20,7 +23,7 @@ ENV_TO_TEST = ["MsPacmanNoFrameskip-v4", "PongNoFrameskip-v4"]
 
 def _parse_sb3_version():
     """Parse SB3 version and return (major, minor, patch) as integers.
-    
+
     Parses version strings like "2.7.1", "2.7.1a0", "2.7.1rc1" into (major, minor, patch).
     For pre-release versions, only the numeric part of the patch is extracted.
     """
@@ -46,6 +49,79 @@ def _parse_sb3_version():
 
 # Parse version once at module level
 SB3_VERSION_TUPLE = _parse_sb3_version()
+
+
+def _dict_space():
+    return spaces.Dict(
+        {
+            "image": spaces.Box(0, 255, shape=(2, 2), dtype=np.uint8),
+            "vector": spaces.Box(0, 255, shape=(3,), dtype=np.uint8),
+        }
+    )
+
+
+def _dict_obs(step: int, n_envs: int):
+    image = np.full((n_envs, 2, 2), step, dtype=np.uint8)
+    vector = np.full((n_envs, 3), step + 1, dtype=np.uint8)
+    return {"image": image, "vector": vector}
+
+
+@pytest.mark.parametrize("compression_method", ["none", "rle"])
+def test_dict_rollout_buffer(compression_method: str):
+    n_envs = 2
+    buffer_size = 4
+    buffer = CompressedDictRolloutBuffer(
+        buffer_size=buffer_size,
+        observation_space=_dict_space(),
+        action_space=spaces.Discrete(2),
+        n_envs=n_envs,
+        compression_method=compression_method,
+    )
+
+    for step in range(buffer_size):
+        buffer.add(
+            obs=_dict_obs(step, n_envs),
+            action=np.array([0, 1]),
+            reward=np.array([0.0, 1.0]),
+            episode_start=np.array([False, False]),
+            value=torch.zeros(n_envs),
+            log_prob=torch.zeros(n_envs),
+        )
+
+    samples = next(buffer.get())
+    assert samples.observations["image"].shape == (buffer_size * n_envs, 2, 2)
+    assert samples.observations["vector"].shape == (buffer_size * n_envs, 3)
+    assert samples.observations["image"].dtype == torch.uint8
+    assert samples.actions.shape == (buffer_size * n_envs, 1)
+
+
+@pytest.mark.parametrize("compression_method", ["none", "rle"])
+def test_dict_replay_buffer(compression_method: str):
+    n_envs = 2
+    buffer_size = 6
+    buffer = CompressedDictReplayBuffer(
+        buffer_size=buffer_size,
+        observation_space=_dict_space(),
+        action_space=spaces.Discrete(2),
+        n_envs=n_envs,
+        compression_method=compression_method,
+    )
+
+    for step in range(buffer.buffer_size):
+        buffer.add(
+            obs=_dict_obs(step, n_envs),
+            next_obs=_dict_obs(step + 1, n_envs),
+            action=np.array([0, 1]),
+            reward=np.array([0.0, 1.0]),
+            done=np.array([False, True]),
+            infos=[{}, {}],
+        )
+
+    samples = buffer.sample(batch_size=4)
+    assert samples.observations["image"].shape == (4, 2, 2)
+    assert samples.next_observations["vector"].shape == (4, 3)
+    assert samples.observations["image"].dtype == torch.uint8
+    assert samples.actions.shape == (4, 1)
 
 
 def is_sb3_version_gte(target_version):
@@ -74,35 +150,25 @@ def get_tests():
 
 @pytest.mark.parametrize("env_id,compression_method,n_envs,n_stack", list(get_tests()))
 def test_rollout(env_id: str, compression_method: str, n_envs: int, n_stack: int):
-    compressed_buffer_test(
-        env_id, compression_method, n_envs, n_stack, buffer_type="rollout"
-    )
+    compressed_buffer_test(env_id, compression_method, n_envs, n_stack, buffer_type="rollout")
 
 
 @pytest.mark.parametrize("env_id,compression_method,n_envs,n_stack", list(get_tests()))
 def test_replay(env_id: str, compression_method: str, n_envs: int, n_stack: int):
-    compressed_buffer_test(
-        env_id, compression_method, n_envs, n_stack, buffer_type="replay"
-    )
+    compressed_buffer_test(env_id, compression_method, n_envs, n_stack, buffer_type="replay")
 
 
-def compressed_buffer_test(
-    env_id: str, compression_method: str, n_envs: int, n_stack: int, buffer_type: str
-):
+def compressed_buffer_test(env_id: str, compression_method: str, n_envs: int, n_stack: int, buffer_type: str):
     print(
         f"Testing {(env_id, compression_method, n_envs, n_stack, buffer_type)}",
         flush=True,
     )
 
     obs = make_env(env_id=env_id, n_envs=1, framestack=n_stack).observation_space
-    buffer_dtypes = find_buffer_dtypes(
-        obs_shape=obs.shape, elem_dtype=obs.dtype, compression_method=compression_method
-    )
+    buffer_dtypes = find_buffer_dtypes(obs_shape=obs.shape, elem_dtype=obs.dtype, compression_method=compression_method)
 
     # if using pytest, avoid using SubprocVecEnv
-    env = make_env(
-        env_id=env_id, n_envs=n_envs, vec_env_cls=DummyVecEnv, framestack=n_stack
-    )
+    env = make_env(env_id=env_id, n_envs=n_envs, vec_env_cls=DummyVecEnv, framestack=n_stack)
     if buffer_type == "replay":
 
         def collect_data(model: DQN):
@@ -112,7 +178,7 @@ def compressed_buffer_test(
         uncompressed = ReplayBuffer
         model_class = DQN
         extra_args = dict(buffer_size=1000)
-        expected_dtype = np.float32
+        expected_dtype = obs.dtype
         uncompressed_dtype = obs.dtype
     elif buffer_type == "rollout":
 
@@ -134,9 +200,7 @@ def compressed_buffer_test(
         expected_dtype = uncompressed_dtype
     else:
         extra_args[buffer_type + "_buffer_class"] = buffer_class
-        extra_args[buffer_type + "_buffer_kwargs"] = dict(
-            dtypes=buffer_dtypes, compression_method=compression_method
-        )
+        extra_args[buffer_type + "_buffer_kwargs"] = dict(dtypes=buffer_dtypes, compression_method=compression_method)
 
     model = model_class(
         "CnnPolicy",
@@ -155,9 +219,7 @@ def compressed_buffer_test(
 
     # Check basic properties
     assert last_obs is not None, "No observations stored"
-    assert (
-        last_obs.dtype == expected_dtype
-    ), f"Expected {expected_dtype} observations, got {last_obs.dtype}"
+    assert last_obs.dtype == expected_dtype, f"Expected {expected_dtype} observations, got {last_obs.dtype}"
 
     # Dump to disk for manual inspection (can be disabled with environment variable)
     if os.environ.get("DISABLE_TEST_OBSERVATIONS_SAVE", "false").lower() not in ("true", "1", "yes"):

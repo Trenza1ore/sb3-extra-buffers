@@ -59,14 +59,10 @@ COMPRESSION_METHODS = [
 ]
 
 if __name__ == "__main__":
-    device = (
-        "mps" if th.mps.is_available() else "cuda" if th.cuda.is_available() else "cpu"
-    )
+    device = "mps" if th.mps.is_available() else "cuda" if th.cuda.is_available() else "cpu"
     buffer_device = device
     render_mode = "human" if RENDER_GAMES else "rgb_array"
-    vec_env = make_env(
-        env_id=ATARI_GAME, n_envs=N_ENVS, framestack=FRAMESTACK, render_mode=render_mode
-    )
+    vec_env = make_env(env_id=ATARI_GAME, n_envs=N_ENVS, framestack=FRAMESTACK, render_mode=render_mode)
     vec_env_obs = vec_env.observation_space
     buffer_dtype = find_buffer_dtypes(vec_env_obs.shape, compression_method="rle-jit")
     if CLEAR_SCREEN:
@@ -93,9 +89,7 @@ if __name__ == "__main__":
         }
     )
 
-    vec_buffer = DummyVecRolloutBuffer(
-        **buffer_config, buffers=list(buffer_dict.values())
-    )
+    vec_buffer = DummyVecRolloutBuffer(**buffer_config, buffers=list(buffer_dict.values()))
     model_path = FINAL_MODEL_PATH
     model = PPO.load(
         FINAL_MODEL_PATH,
@@ -141,11 +135,7 @@ if __name__ == "__main__":
             size /= 1024
             if size < 1024:
                 if size < 100:
-                    size_str = (
-                        f"{size:4.1f}{size_unit}B"
-                        if size > 10
-                        else f"{size:4.2f}{size_unit}B"
-                    )
+                    size_str = f"{size:4.1f}{size_unit}B" if size > 10 else f"{size:4.2f}{size_unit}B"
                 else:
                     size_str = f"{round(size):4d}{size_unit}B"
                 break
@@ -153,7 +143,7 @@ if __name__ == "__main__":
         # Prepare content for printing
         pos = int(v.pos)
         if k == "baseline":
-            print(f"{pos} steps for each env, {4*pos} steps in total.")
+            print(f"{pos} steps for each env, {4 * pos} steps in total.")
 
         t = time.time_ns()
         [x for x in v.get(batch_size=64)]
@@ -169,7 +159,7 @@ if __name__ == "__main__":
     # Print out formatted table
     print(f"Device: {device}")
     print(f"|{'Compression':^17s}|{'Memory':^8s}|{'Memory %':^8s}|{'Latency':^10s}|")
-    print(f"|{'-'*17}|{'-'*8}|{'-'*8}|{'-'*10}|")
+    print(f"|{'-' * 17}|{'-' * 8}|{'-' * 8}|{'-' * 10}|")
     sorted_list = sorted(sort_dict.items(), key=lambda x: x[1][1])
     for k, v in sorted(sorted_list, key=lambda x: x[1][0]):
         print(k)

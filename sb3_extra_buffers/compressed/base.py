@@ -21,8 +21,7 @@ else:
 
     def init_jit(*args, **kwargs):
         raise ModuleNotFoundError(
-            "Numba library doesn't seem to be installed, try installing via:\n"
-            'pip install "sb3-extra-buffers[numba]"'
+            'Numba library doesn\'t seem to be installed, try installing via:\npip install "sb3-extra-buffers[numba]"'
         )
 
 
@@ -31,7 +30,7 @@ def find_buffer_dtypes(
     elem_dtype: Union[np.integer, np.floating] = np.uint8,
     compression_method: str = "rle",
 ) -> dict[str, Any]:
-    """Find the best data types to use for CompressedBuffer based on obs shape and compression method"""
+    """Find the best data types to use for CompressedBuffer based on obs shape and compression method."""
     if isinstance(obs_shape, tuple):
         obs_shape = np.prod(obs_shape)
     buffer_dtypes = dict(elem_type=elem_dtype, runs_type=find_smallest_dtype(obs_shape))
@@ -41,7 +40,7 @@ def find_buffer_dtypes(
 
 
 class BaseCompressedBuffer:
-    """Base Compressed Buffer Class"""
+    """Base Compressed Buffer Class."""
 
     def __init__(
         self,
@@ -54,9 +53,7 @@ class BaseCompressedBuffer:
         if compression_method is None:
             return
         if compression_method[-1].isdigit():
-            re_match = re.search(
-                r"^((?:[A-Za-z]+)|(?:[\w\-]+/))(\-?[0-9]+)$", compression_method
-            )
+            re_match = re.search(r"^((?:[A-Za-z]+)|(?:[\w\-]+/))(\-?[0-9]+)$", compression_method)
             assert re_match, f"Invalid compression shorthand: {compression_method}"
             compression_method = re_match.group(1).removesuffix("/")
             compression_kwargs["compresslevel"] = int(re_match.group(2))
@@ -78,12 +75,8 @@ class BaseCompressedBuffer:
             )
             compression_method = compression_method.removesuffix("-jit")
         # Get the actual compression methods
-        assert (
-            compression_method in COMPRESSION_METHOD_MAP
-        ), f"Unknown compression method {compression_method}"
-        self._compress = partial(
-            COMPRESSION_METHOD_MAP[compression_method].compress, **compression_kwargs
-        )
+        assert compression_method in COMPRESSION_METHOD_MAP, f"Unknown compression method {compression_method}"
+        self._compress = partial(COMPRESSION_METHOD_MAP[compression_method].compress, **compression_kwargs)
         self._decompress = partial(
             COMPRESSION_METHOD_MAP[compression_method].decompress,
             arr_configs=flatten_config,
