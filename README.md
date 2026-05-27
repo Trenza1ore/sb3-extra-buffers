@@ -250,14 +250,3 @@ If you use this project in your research or work, please cite:
 }
 ```
 I really appreciate it :-)
-
----
-## Recording Buffers
-Defined in `sb3_extra_buffers.recording`
-Mainly used in combination with [SegDoom](https://github.com/Trenza1ore/SegDoom) to record stuff.
-#### WIP
----
-## Training Utils
-Defined in `sb3_extra_buffers.training_utils`
-Buffer warm-up and model evaluation
-#### WIP
