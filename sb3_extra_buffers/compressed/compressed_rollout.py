@@ -220,7 +220,7 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
     def reconstruct_obs(self, idx: int):
         """Decompress the flattened observation at ``idx`` and move it to the device."""
         obs = self._decompress(self.observations[idx, 0]).reshape(self.obs_shape)
-        return th.from_numpy(obs).to(self.device, th.float32)
+        return th.from_numpy(obs).to(self.device)
 
 
 class CompressedDictRolloutBuffer(CompressedRolloutBuffer):

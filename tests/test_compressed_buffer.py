@@ -178,8 +178,7 @@ def compressed_buffer_test(env_id: str, compression_method: str, n_envs: int, n_
         uncompressed = ReplayBuffer
         model_class = DQN
         extra_args = dict(buffer_size=1000)
-        expected_dtype = obs.dtype
-        uncompressed_dtype = obs.dtype
+        expected_dtype = uncompressed_dtype = obs.dtype
     elif buffer_type == "rollout":
 
         def collect_data(model: PPO):
@@ -189,10 +188,10 @@ def compressed_buffer_test(env_id: str, compression_method: str, n_envs: int, n_
         uncompressed = RolloutBuffer
         model_class = PPO
         extra_args = dict(n_steps=384)
-        expected_dtype = np.float32
         # SB3 2.7.1 fixed rollout buffer's observation storage datatype
         # For backwards compatibility, use obs.dtype for 2.7.1+ and expected_dtype for older versions
-        uncompressed_dtype = obs.dtype if is_sb3_version_gte((2, 7, 1)) else expected_dtype
+        expected_dtype = obs.dtype if is_sb3_version_gte((2, 7, 1)) else np.float32
+        uncompressed_dtype = obs.dtype
     else:
         raise NotImplementedError(f"What is {buffer_type}?")
     if compression_method == "none":
