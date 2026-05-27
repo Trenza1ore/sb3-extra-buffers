@@ -5,9 +5,14 @@ from typing import Optional
 import ale_py
 import gymnasium as gym
 from stable_baselines3.common.env_util import make_atari_env
-from stable_baselines3.common.vec_env import (DummyVecEnv, SubprocVecEnv,
-                                              VecEnv, VecEnvWrapper,
-                                              VecFrameStack, VecTransposeImage)
+from stable_baselines3.common.vec_env import (
+    DummyVecEnv,
+    SubprocVecEnv,
+    VecEnv,
+    VecEnvWrapper,
+    VecFrameStack,
+    VecTransposeImage,
+)
 
 
 def make_env(

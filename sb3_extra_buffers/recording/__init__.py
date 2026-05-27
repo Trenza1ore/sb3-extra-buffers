@@ -7,5 +7,7 @@ __all__ = [
 
 from sb3_extra_buffers.recording.base import BaseRecordBuffer
 from sb3_extra_buffers.recording.dummy_record_buffers import (
-    DummyRecordBuffer, FramelessRecordBuffer)
+    DummyRecordBuffer,
+    FramelessRecordBuffer,
+)
 from sb3_extra_buffers.recording.record_buffer import RecordBuffer

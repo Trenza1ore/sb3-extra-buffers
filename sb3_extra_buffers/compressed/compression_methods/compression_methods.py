@@ -172,8 +172,9 @@ if HAS_IGZIP:
     )
 
 try:
-    from sb3_extra_buffers.compressed.compression_methods.compression_methods_numba import \
-        rle_numba_decompress
+    from sb3_extra_buffers.compressed.compression_methods.compression_methods_numba import (
+        rle_numba_decompress,
+    )
 
     HAS_NUMBA = True
     COMPRESSION_METHOD_MAP["rle-jit"] = CompressionMethods(
@@ -184,7 +185,9 @@ except ImportError:
 
 try:
     from sb3_extra_buffers.compressed.compression_methods.compression_methods_zstd import (
-        zstd_compress, zstd_decompress)
+        zstd_compress,
+        zstd_decompress,
+    )
 
     HAS_ZSTD = True
     COMPRESSION_METHOD_MAP["zstd"] = CompressionMethods(
@@ -195,8 +198,11 @@ except ImportError:
 
 try:
     from sb3_extra_buffers.compressed.compression_methods.compression_methods_lz4 import (
-        lz4_block_compress, lz4_block_decompress, lz4_frame_compress,
-        lz4_frame_decompress)
+        lz4_block_compress,
+        lz4_block_decompress,
+        lz4_frame_compress,
+        lz4_frame_decompress,
+    )
 
     HAS_LZ4 = True
     COMPRESSION_METHOD_MAP["lz4-frame"] = CompressionMethods(

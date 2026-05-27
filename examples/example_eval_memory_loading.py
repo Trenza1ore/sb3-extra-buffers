@@ -11,8 +11,11 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.buffers import RolloutBuffer
 
 from examples.example_train_atari import ATARI_GAME
-from sb3_extra_buffers.compressed import (CompressedRolloutBuffer, DummyCls,
-                                          find_buffer_dtypes)
+from sb3_extra_buffers.compressed import (
+    CompressedRolloutBuffer,
+    DummyCls,
+    find_buffer_dtypes,
+)
 from sb3_extra_buffers.compressed.base import BaseCompressedBuffer
 from sb3_extra_buffers.training_utils.atari import make_env
 from sb3_extra_buffers.vec_buf import DummyVecRolloutBuffer

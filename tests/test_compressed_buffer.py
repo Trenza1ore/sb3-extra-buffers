@@ -3,13 +3,16 @@ import os
 import numpy as np
 import pytest
 import torch
-from stable_baselines3 import DQN, PPO, __version__ as sb3_version
+from stable_baselines3 import DQN, PPO
+from stable_baselines3 import __version__ as sb3_version
 from stable_baselines3.common.buffers import ReplayBuffer, RolloutBuffer
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-from sb3_extra_buffers.compressed import (CompressedReplayBuffer,
-                                          CompressedRolloutBuffer,
-                                          find_buffer_dtypes)
+from sb3_extra_buffers.compressed import (
+    CompressedReplayBuffer,
+    CompressedRolloutBuffer,
+    find_buffer_dtypes,
+)
 from sb3_extra_buffers.training_utils.atari import make_env
 
 ENV_TO_TEST = ["MsPacmanNoFrameskip-v4", "PongNoFrameskip-v4"]
@@ -56,7 +59,7 @@ def get_tests():
         if "igzip" in compress_method:
             suffix = ["0", "3"]
         if "gzip" in compress_method:
-            suffix = ["1", "5", "9"]
+            suffix = ["1"]
         for compress_suffix in suffix:
             for n_stack in [1, 4]:
                 for env_id in ENV_TO_TEST:

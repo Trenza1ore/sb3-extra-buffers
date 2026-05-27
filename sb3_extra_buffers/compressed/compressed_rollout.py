@@ -4,9 +4,12 @@ from typing import Generator, Optional, Union
 import numpy as np
 import torch as th
 from gymnasium import spaces
-from stable_baselines3.common.buffers import (BaseBuffer, RolloutBuffer,
-                                              RolloutBufferSamples,
-                                              VecNormalize)
+from stable_baselines3.common.buffers import (
+    BaseBuffer,
+    RolloutBuffer,
+    RolloutBufferSamples,
+    VecNormalize,
+)
 
 from sb3_extra_buffers.compressed.base import BaseCompressedBuffer
 

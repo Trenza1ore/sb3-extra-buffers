@@ -2,8 +2,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.utils import get_linear_fn
 
-from sb3_extra_buffers.compressed import (CompressedRolloutBuffer,
-                                          find_buffer_dtypes)
+from sb3_extra_buffers.compressed import CompressedRolloutBuffer, find_buffer_dtypes
 from sb3_extra_buffers.training_utils.atari import make_env
 
 ATARI_GAME = "MsPacmanNoFrameskip-v4"

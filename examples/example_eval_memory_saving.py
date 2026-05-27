@@ -8,10 +8,12 @@ import torch as th
 from stable_baselines3 import DQN
 from stable_baselines3.common.buffers import ReplayBuffer
 
-from examples.example_train_replay import (ATARI_GAME, FINAL_MODEL_PATH,
-                                           FRAMESTACK)
-from sb3_extra_buffers.compressed import (CompressedReplayBuffer, DummyCls,
-                                          find_buffer_dtypes)
+from examples.example_train_replay import ATARI_GAME, FINAL_MODEL_PATH, FRAMESTACK
+from sb3_extra_buffers.compressed import (
+    CompressedReplayBuffer,
+    DummyCls,
+    find_buffer_dtypes,
+)
 from sb3_extra_buffers.compressed.base import BaseCompressedBuffer
 from sb3_extra_buffers.training_utils.atari import make_env
 from sb3_extra_buffers.training_utils.buffer_warmup import eval_model
@@ -113,7 +115,7 @@ if __name__ == "__main__":
     sort_dict = dict()
     save_dir = f"debug_obs/size_eval/{ATARI_GAME}"
     os.makedirs(save_dir, exist_ok=True)
-    for (k, v), l in zip(list(buffer_dict.items()), buffer_latency):
+    for (k, v), latency in zip(list(buffer_dict.items()), buffer_latency):
         raw_size = sys.getsizeof(v.observations)
         buffer = np.ravel(v.observations)
         if isinstance(v, BaseCompressedBuffer):
@@ -148,7 +150,7 @@ if __name__ == "__main__":
         #     np.save(f"{save_dir}/{k.replace('/', '-')}.npy", buffer)
         del buffer_dict[k], buffer, v
         gc.collect()
-        sort_dict[f"| {k:15s} | {size_str} | {size_vs_base:5.1f}% | {l:7.1f}s |"] = l
+        sort_dict[f"| {k:15s} | {size_str} | {size_vs_base:5.1f}% | {latency:7.1f}s |"] = latency
 
     # Print out formatted table
     print(f"|{'Compression':^17s}|{'Memory':^8s}|{'Memory %':^8s}|{'Latency':^10s}|")

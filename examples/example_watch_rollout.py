@@ -7,8 +7,7 @@ import numpy as np
 import torch as th
 from stable_baselines3 import PPO
 
-from examples.example_train_rollout import (ATARI_GAME, BEST_MODEL_DIR,
-                                            FRAMESTACK)
+from examples.example_train_rollout import ATARI_GAME, BEST_MODEL_DIR, FRAMESTACK
 from sb3_extra_buffers.compressed import DummyCls
 from sb3_extra_buffers.training_utils.atari import make_env
 

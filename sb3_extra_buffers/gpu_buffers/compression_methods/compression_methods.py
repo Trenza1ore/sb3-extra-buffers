@@ -1,6 +1,5 @@
 from collections import namedtuple
 
-import numpy as np
 import torch as th
 
 from sb3_extra_buffers.gpu_buffers.raw_buffer import RawBuffer

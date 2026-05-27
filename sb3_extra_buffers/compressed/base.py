@@ -7,12 +7,16 @@ import numpy as np
 
 from sb3_extra_buffers import __version__
 from sb3_extra_buffers.compressed.compression_methods import (
-    COMPRESSION_METHOD_MAP, has_igzip, has_numba)
+    COMPRESSION_METHOD_MAP,
+    has_igzip,
+    has_numba,
+)
 from sb3_extra_buffers.compressed.utils import find_smallest_dtype
 
 if has_numba():
-    from sb3_extra_buffers.compressed.compression_methods.compression_methods_numba import \
-        init_jit
+    from sb3_extra_buffers.compressed.compression_methods.compression_methods_numba import (
+        init_jit,
+    )
 else:
 
     def init_jit(*args, **kwargs):

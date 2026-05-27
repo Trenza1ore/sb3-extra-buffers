@@ -5,8 +5,12 @@ import numpy as np
 import torch as th
 from stable_baselines3 import DQN
 
-from examples.example_train_replay import (ATARI_GAME, BEST_MODEL_DIR,
-                                           FINAL_MODEL_PATH, FRAMESTACK)
+from examples.example_train_replay import (
+    ATARI_GAME,
+    BEST_MODEL_DIR,
+    FINAL_MODEL_PATH,
+    FRAMESTACK,
+)
 from sb3_extra_buffers.compressed import DummyCls
 from sb3_extra_buffers.training_utils.atari import make_env
 from sb3_extra_buffers.training_utils.eval_model import eval_model

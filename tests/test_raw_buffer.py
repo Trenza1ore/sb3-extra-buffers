@@ -2,10 +2,13 @@ import numpy as np
 import pytest
 import torch as th
 
-from sb3_extra_buffers.compressed.compression_methods.compression_methods import \
-    rle_numpy_decompress_old
+from sb3_extra_buffers.compressed.compression_methods.compression_methods import (
+    rle_numpy_decompress_old,
+)
 from sb3_extra_buffers.gpu_buffers.compression_methods.compression_methods import (
-    rle_compress, rle_decompress)
+    rle_compress,
+    rle_decompress,
+)
 from sb3_extra_buffers.gpu_buffers.raw_buffer import RawBuffer
 
 
@@ -51,7 +54,7 @@ def test_rle_compression_roundtrip(input_arr):
     )
 
     # Decompress
-    out = rle_numpy_decompress_old(
+    rle_numpy_decompress_old(
         data=runs + elem,
         elem_type=np.uint8,
         runs_type=np.uint16,
