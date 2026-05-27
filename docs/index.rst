@@ -11,9 +11,9 @@ stored.
 
 The package is designed for reinforcement-learning workloads with large replay
 or rollout buffers, especially Atari-style image observations where storing raw
-frames can dominate memory use. As shown in `benchmarks on Atari games <benchmarks>`, the
-best configurations reduce memory use by more than 95% while keeping sampling
-latency close to the uncompressed SB3 buffers.
+frames can dominate memory use. As shown in :doc:`benchmarks` on Atari games, the
+best configurations reduce memory usage by more than 95% while keeping latency close
+to the default buffers in SB3.
 
 Why compress buffers?
 ---------------------

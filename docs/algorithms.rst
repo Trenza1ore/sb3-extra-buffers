@@ -15,7 +15,7 @@ Implemented compression methods
 - ``gzip`` — Built-in gzip compression via Python's ``gzip`` module.
 - ``igzip`` — Intel-accelerated variant via ``isal.igzip``; uses
   `python-isal <https://github.com/pycompression/python-isal>`__.
-- **``zstd``** — Zstandard compression via
+- ``zstd`` — Zstandard compression via
   `python-zstd <https://github.com/sergey-dryabzhinsky/python-zstd>`__.
   **(Recommended)**
 - ``lz4-frame`` — LZ4 (frame format) compression via
