@@ -177,8 +177,8 @@ def compressed_buffer_test(env_id: str, compression_method: str, n_envs: int, n_
         buffer_class = CompressedReplayBuffer
         uncompressed = ReplayBuffer
         model_class = DQN
-        extra_args = dict(buffer_size=1000, output_dtype="float")
-        expected_dtype = np.float32
+        extra_args = dict(buffer_size=1000)
+        expected_dtype = obs.dtype
         uncompressed_dtype = obs.dtype
     elif buffer_type == "rollout":
 
