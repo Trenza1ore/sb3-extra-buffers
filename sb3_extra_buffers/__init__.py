@@ -16,7 +16,6 @@ def sb3_version() -> Tuple[int, int, int]:
     Parses version strings like "2.7.1", "2.7.1a0", "2.7.1rc1" into (major, minor, patch).
     For pre-release versions, only the numeric part of the patch is extracted.
     """
-
     parts = sb3_ver.split(".")
     # Take first three components
     version_parts = parts[:3]

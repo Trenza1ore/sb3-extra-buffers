@@ -430,6 +430,7 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
 # For backwards compatibility, use float32 for older versions
 # https://github.com/DLR-RM/stable-baselines3/pull/2163
 if sb3_version() < (2, 7, 1):
+
     def legacy_reconstruct_obs(self, idx: int):
         """Decompress the flattened observation at ``idx`` and move it to the device."""
         obs = self._decompress(self.observations[idx, 0]).reshape(self.obs_shape)  # pylint: disable=protected-access
