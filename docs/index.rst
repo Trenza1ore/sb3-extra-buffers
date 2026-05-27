@@ -34,6 +34,17 @@ palette game frames, grayscale observations, and many RGB observations. For
 noisy RGB input, ``zstd`` is usually a stronger default than run-length
 encoding.
 
+Project links
+-------------
+
+- `Master's thesis that started the project <https://arxiv.org/abs/2511.11703>`__
+- `Source code <https://github.com/Trenza1ore/sb3-extra-buffers>`__
+- `PyPI package <https://pypi.org/project/sb3-extra-buffers/>`__
+- `Stable-Baselines3 project listing <https://stable-baselines3.readthedocs.io/en/master/misc/projects.html#sb3-extra-buffers-ram-expansions-are-overrated-just-compress-your-observations>`__
+- `SB3 Contrib <https://github.com/Stable-Baselines-Team/stable-baselines3-contrib>`__
+- `SBX <https://github.com/araffin/sbx>`__
+- `RL Baselines3 Zoo <https://github.com/DLR-RM/rl-baselines3-zoo>`__
+
 What is included
 ----------------
 
@@ -74,17 +85,6 @@ Package layout
 ``sb3_extra_buffers.vec_buf`` and ``sb3_extra_buffers.gpu_buffers``
    Experimental helpers for multi-buffer delegation and GPU-oriented byte
    storage.
-
-Project links
--------------
-
-- `Master's thesis that started the project <https://arxiv.org/abs/2511.11703>`__
-- `Source code <https://github.com/Trenza1ore/sb3-extra-buffers>`__
-- `PyPI package <https://pypi.org/project/sb3-extra-buffers/>`__
-- `Stable-Baselines3 project listing <https://stable-baselines3.readthedocs.io/en/master/misc/projects.html#sb3-extra-buffers-ram-expansions-are-overrated-just-compress-your-observations>`__
-- `SB3 Contrib <https://github.com/Stable-Baselines-Team/stable-baselines3-contrib>`__
-- `SBX <https://github.com/araffin/sbx>`__
-- `RL Baselines3 Zoo <https://github.com/DLR-RM/rl-baselines3-zoo>`__
 
 .. toctree::
    :maxdepth: 2
