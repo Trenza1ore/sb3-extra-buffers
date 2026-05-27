@@ -27,7 +27,7 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
     dones: np.ndarray
     timeouts: np.ndarray
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         buffer_size: int,
         observation_space: spaces.Space,
@@ -270,7 +270,7 @@ class CompressedDictReplayBuffer(CompressedReplayBuffer):
     observations: dict[str, np.ndarray]  # type: ignore[assignment]
     next_observations: dict[str, np.ndarray]  # type: ignore[assignment]
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         buffer_size: int,
         observation_space: spaces.Dict,
