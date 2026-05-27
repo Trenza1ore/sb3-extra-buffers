@@ -14,6 +14,7 @@ from stable_baselines3.common.buffers import (
     VecNormalize,
 )
 
+from sb3_extra_buffers import sb3_version
 from sb3_extra_buffers.compressed.base import BaseCompressedBuffer
 
 
@@ -29,7 +30,7 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
     log_probs: np.ndarray
     values: np.ndarray
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         buffer_size: int,
         observation_space: spaces.Space,
@@ -220,7 +221,7 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
     def reconstruct_obs(self, idx: int):
         """Decompress the flattened observation at ``idx`` and move it to the device."""
         obs = self._decompress(self.observations[idx, 0]).reshape(self.obs_shape)
-        return th.from_numpy(obs).to(self.device, th.float32)
+        return th.from_numpy(obs).to(self.device)
 
 
 class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
@@ -230,7 +231,7 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
     obs_shape: dict[str, tuple[int, ...]]  # type: ignore[assignment]
     observations: dict[str, np.ndarray]  # type: ignore[assignment]
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         buffer_size: int,
         observation_space: spaces.Dict,
@@ -423,3 +424,16 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
             self.obs_shape[key]
         )
         return th.from_numpy(obs).to(self.device)
+
+
+# SB3 2.7.1 fixed rollout buffer's observation storage datatype
+# For backwards compatibility, use float32 for older versions
+# https://github.com/DLR-RM/stable-baselines3/pull/2163
+if sb3_version() < (2, 7, 1):
+
+    def legacy_reconstruct_obs(self, idx: int):
+        """Decompress the flattened observation at ``idx`` and move it to the device."""
+        obs = self._decompress(self.observations[idx, 0]).reshape(self.obs_shape)  # pylint: disable=protected-access
+        return th.from_numpy(obs).to(self.device, dtype=th.float32)
+
+    CompressedRolloutBuffer.reconstruct_obs = legacy_reconstruct_obs

@@ -5,10 +5,10 @@ import pytest
 import torch
 from gymnasium import spaces
 from stable_baselines3 import DQN, PPO
-from stable_baselines3 import __version__ as sb3_version
 from stable_baselines3.common.buffers import ReplayBuffer, RolloutBuffer
 from stable_baselines3.common.vec_env import DummyVecEnv
 
+from sb3_extra_buffers import sb3_version
 from sb3_extra_buffers.compressed import (
     CompressedDictReplayBuffer,
     CompressedDictRolloutBuffer,
@@ -21,34 +21,8 @@ from sb3_extra_buffers.training_utils.atari import make_env
 ENV_TO_TEST = ["MsPacmanNoFrameskip-v4", "PongNoFrameskip-v4"]
 
 
-def _parse_sb3_version():
-    """Parse SB3 version and return (major, minor, patch) as integers.
-
-    Parses version strings like "2.7.1", "2.7.1a0", "2.7.1rc1" into (major, minor, patch).
-    For pre-release versions, only the numeric part of the patch is extracted.
-    """
-    parts = sb3_version.split(".")
-    # Take first three components
-    version_parts = parts[:3]
-    # For the patch version, split by non-numeric characters and take first part
-    if len(version_parts) >= 3:
-        patch_parts = "".join(c if c.isdigit() else " " for c in version_parts[2]).split()
-        version_parts[2] = patch_parts[0] if patch_parts else "0"
-    # Pad with zeros if needed
-    while len(version_parts) < 3:
-        version_parts.append("0")
-    # Convert to integers, defaulting to 0 for non-numeric parts
-    result = []
-    for p in version_parts:
-        try:
-            result.append(int(p))
-        except ValueError:
-            result.append(0)
-    return tuple(result)
-
-
 # Parse version once at module level
-SB3_VERSION_TUPLE = _parse_sb3_version()
+SB3_VERSION_TUPLE = sb3_version()
 
 
 def _dict_space():
@@ -178,8 +152,7 @@ def compressed_buffer_test(env_id: str, compression_method: str, n_envs: int, n_
         uncompressed = ReplayBuffer
         model_class = DQN
         extra_args = dict(buffer_size=1000)
-        expected_dtype = obs.dtype
-        uncompressed_dtype = obs.dtype
+        expected_dtype = uncompressed_dtype = obs.dtype
     elif buffer_type == "rollout":
 
         def collect_data(model: PPO):
@@ -189,10 +162,10 @@ def compressed_buffer_test(env_id: str, compression_method: str, n_envs: int, n_
         uncompressed = RolloutBuffer
         model_class = PPO
         extra_args = dict(n_steps=384)
-        expected_dtype = np.float32
         # SB3 2.7.1 fixed rollout buffer's observation storage datatype
         # For backwards compatibility, use obs.dtype for 2.7.1+ and expected_dtype for older versions
-        uncompressed_dtype = obs.dtype if is_sb3_version_gte((2, 7, 1)) else expected_dtype
+        expected_dtype = obs.dtype if is_sb3_version_gte((2, 7, 1)) else np.float32
+        uncompressed_dtype = obs.dtype
     else:
         raise NotImplementedError(f"What is {buffer_type}?")
     if compression_method == "none":
