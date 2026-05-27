@@ -3,18 +3,18 @@
 .DEFAULT_GOAL := install
 
 format:
-	uv run ruff check --fix || true
-	uv run ruff check --select I --fix || true
-	uv run ruff format || true
+	ruff check --fix || true
+	ruff check --select I --fix || true
+	ruff format || true
 
 lint:
-	@uv run mypy -p sb3_extra_buffers
+	@mypy -p sb3_extra_buffers
 
 test:
-	@uv run pytest tests/
+	@pytest tests/
 
 docstring:
-	@uv run pydocstyle sb3_extra_buffers/
+	@pydocstyle sb3_extra_buffers/
 
 amend:
 	git commit --amend --no-edit
@@ -34,4 +34,4 @@ release: badge
 
 # Mutate badge with uuid to force refresh GitCode cache
 badge:
-	uv run python scripts/mutate_badge.py
+	python scripts/mutate_badge.py
