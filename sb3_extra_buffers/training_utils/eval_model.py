@@ -37,7 +37,7 @@ def process_outcome(infos: list[dict]) -> tuple[np.ndarray[float], np.ndarray[bo
 def eval_model(
     n_eps: int,
     eval_env: VecEnv,
-    eval_model: BaseAlgorithm,
+    model: BaseAlgorithm,
     close_env: bool = True,
     buffer: Union[ReplayLike, Iterable[ReplayLike], None] = None,
 ) -> tuple[list[NumberType], list]:
@@ -46,7 +46,7 @@ def eval_model(
     Args:
         n_eps: Number of completed episodes to collect.
         eval_env: Vectorized evaluation environment.
-        eval_model: Policy used for action selection.
+        model: Policy used for action selection.
         close_env: Whether to close ``eval_env`` when finished.
         buffer: Optional replay buffer(s) to fill with transitions.
 
@@ -73,7 +73,7 @@ def eval_model(
 
     # Evaluation loop
     while finished_eps_count < n_eps:
-        action, _ = eval_model.predict(obs, deterministic=True)
+        action, _ = model.predict(obs, deterministic=True)
         new_obs, reward, done, info = eval_env.step(action)
 
         if done.any():
@@ -107,7 +107,7 @@ def eval_model(
         eval_env.close()
 
     # Cache clean-up for compute device
-    eval_device_type = eval_model.device.type
+    eval_device_type = model.device.type
     if eval_device_type != "cpu":
         pbar.set_description_str(f"Cleaning {eval_device_type} cache")
         try:
@@ -117,7 +117,7 @@ def eval_model(
 
     # Garbage collection
     pbar.set_description_str("Garbage collection")
-    del eval_env, eval_model, obs, new_obs, reward, done, info, action
+    del eval_env, model, obs, new_obs, reward, done, info, action
     gc.collect()
     pbar.set_description_str("Done")
     pbar.close()

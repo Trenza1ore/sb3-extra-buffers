@@ -1,4 +1,4 @@
-"""Fill replay buffers before training using a warm-up policy."""
+"""Fill replay buffers before training (buffer warm-up)."""
 
 from typing import Iterable, Optional, Union
 
@@ -37,10 +37,9 @@ def warm_up(
     mean_reward, buffer_latency = eval_model(
         n_eps=warmup_episodes,
         eval_env=warmup_env,
-        eval_model=warmup_model,
-        eval_n_envs=warmup_n_envs,
-        buffer_n_envs=n_envs,
+        model=warmup_model,
         buffer=buffer,
+        close_env=False,
     )
 
     return mean_reward, buffer_latency
