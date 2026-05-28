@@ -1,5 +1,7 @@
 """On-policy rollout buffers that store compressed observations."""
 
+# pylint: disable=too-many-instance-attributes, too-many-positional-arguments
+
 import warnings
 from typing import Generator, Optional, Union
 
@@ -77,15 +79,15 @@ class CompressedRolloutBuffer(RolloutBuffer, BaseCompressedBuffer):
         self.normalize_images = normalize_images
         self.flatten_len = np.prod(self.obs_shape)
         if LEGACY_BEHAVIOR:
-            self.flatten_config = dict(shape=self.flatten_len, dtype=np.float32)
+            self.flatten_config = {"shape": self.flatten_len, "dtype": np.float32}
         else:
-            self.flatten_config = dict(shape=self.flatten_len, dtype=observation_space.dtype)
+            self.flatten_config = {"shape": self.flatten_len, "dtype": observation_space.dtype}
 
         # Handle dtypes
-        self.dtypes = dtypes or dict(elem_type=np.uint8, runs_type=np.uint16)
+        self.dtypes = dtypes or {"elem_type": np.uint8, "runs_type": np.uint16}
         if not isinstance(self.dtypes, dict):
             elem_type = self.dtypes
-            self.dtypes = dict(elem_type=elem_type, runs_type=elem_type)
+            self.dtypes = {"elem_type": elem_type, "runs_type": elem_type}
 
         # Compress and decompress
         self.compression_kwargs = compression_kwargs or self.dtypes
@@ -281,15 +283,15 @@ class CompressedDictRolloutBuffer(CompressedRolloutBuffer):
         self.generator_ready = False
         self.normalize_images = normalize_images
         self.flatten_configs = {
-            key: dict(shape=np.prod(obs_shape), dtype=observation_space[key].dtype)
+            key: {"shape": np.prod(obs_shape), "dtype": observation_space[key].dtype}
             for key, obs_shape in self.obs_shape.items()
         }
 
         # Handle dtypes
-        self.dtypes = dtypes or dict(elem_type=np.uint8, runs_type=np.uint16)
+        self.dtypes = dtypes or {"elem_type": np.uint8, "runs_type": np.uint16}
         if not isinstance(self.dtypes, dict):
             elem_type = self.dtypes
-            self.dtypes = dict(elem_type=elem_type, runs_type=elem_type)
+            self.dtypes = {"elem_type": elem_type, "runs_type": elem_type}
 
         # Compress and decompress
         self.compression_kwargs = compression_kwargs or self.dtypes

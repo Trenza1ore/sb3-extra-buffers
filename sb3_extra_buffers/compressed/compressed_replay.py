@@ -1,5 +1,7 @@
 """Replay buffers that store compressed observations."""
 
+# pylint: disable=too-many-instance-attributes, too-many-positional-arguments
+
 import warnings
 from functools import lru_cache
 from typing import Any, Literal, Optional, Union
@@ -66,14 +68,14 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
         )
         self.normalize_images = normalize_images
         self.flatten_len = np.prod(self.obs_shape)
-        self.flatten_config = dict(shape=self.flatten_len, dtype=observation_space.dtype)
+        self.flatten_config = {"shape": self.flatten_len, "dtype": observation_space.dtype}
         self.output_dtype = th.float32 if output_dtype == "float" else None
 
         # Handle dtypes
-        self.dtypes = dtypes or dict(elem_type=np.uint8, runs_type=np.uint16)
+        self.dtypes = dtypes or {"elem_type": np.uint8, "runs_type": np.uint16}
         if not isinstance(self.dtypes, dict):
             elem_type = self.dtypes
-            self.dtypes = dict(elem_type=elem_type, runs_type=elem_type)
+            self.dtypes = {"elem_type": elem_type, "runs_type": elem_type}
 
         # Compress and decompress
         self.compression_kwargs = compression_kwargs or self.dtypes
@@ -130,7 +132,7 @@ class CompressedReplayBuffer(ReplayBuffer, BaseCompressedBuffer):
             elem_size = int(np.dtype(self.dtypes["elem_type"]).itemsize)
             flatten_obs_size = int(self.buffer_size * self.flatten_len * elem_size)
 
-            memory_sufficiency = dict()
+            memory_sufficiency = {}
             msg = f"Available memory: {mem_available / 1e9:.2f}"
             for c_rate in [5, 10, 15, 20, 30, 50, 70, 90, 100]:
                 if not optimize_memory_usage:
@@ -311,17 +313,17 @@ class CompressedDictReplayBuffer(CompressedReplayBuffer):
         assert not optimize_memory_usage, "CompressedDictReplayBuffer does not support optimize_memory_usage"
         self.normalize_images = normalize_images
         self.flatten_configs = {
-            key: dict(shape=np.prod(obs_shape), dtype=observation_space[key].dtype)
+            key: {"shape": np.prod(obs_shape), "dtype": observation_space[key].dtype}
             for key, obs_shape in self.obs_shape.items()
         }
         print(self.flatten_configs)
         self.output_dtype = th.float32 if output_dtype == "float" else None
 
         # Handle dtypes
-        self.dtypes = dtypes or dict(elem_type=np.uint8, runs_type=np.uint16)
+        self.dtypes = dtypes or {"elem_type": np.uint8, "runs_type": np.uint16}
         if not isinstance(self.dtypes, dict):
             elem_type = self.dtypes
-            self.dtypes = dict(elem_type=elem_type, runs_type=elem_type)
+            self.dtypes = {"elem_type": elem_type, "runs_type": elem_type}
 
         # Compress and decompress
         self.compression_kwargs = compression_kwargs or self.dtypes

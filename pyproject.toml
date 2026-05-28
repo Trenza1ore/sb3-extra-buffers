@@ -36,12 +36,14 @@ zstd = ["zstd"]
 lz4 = ["lz4"]
 fast = ["isal", "numba", "zstd", "lz4"]
 extra = ["stable_baselines3[extra]"]
-atari = ["stable_baselines3[extra]"]
+atari = ["stable_baselines3[extra]", "ale-py"]
 vizdoom = ["stable_baselines3[extra]", "vizdoom"]
 
 [dependency-groups]
 # Testing
 test = ["pytest", "pytest-asyncio", "pytest-xdist"]
+# Linting
+lint = ["pylint", "ruff", "mypy"]
 
 [project.urls]
 Homepage = "https://compressed-rl.readthedocs.io"
@@ -86,5 +88,5 @@ max-line-length = 120
 [tool.pylint.DESIGN]
 max-return = 5
 max-args = 15
-max-locals = 20
-max-branches = 25
+max-locals = 50
+max-branches = 50

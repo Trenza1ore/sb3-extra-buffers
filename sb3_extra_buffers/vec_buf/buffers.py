@@ -1,5 +1,7 @@
 """Experimental rollout buffer that delegates to multiple underlying buffers."""
 
+# pylint: disable=too-few-public-methods, too-many-positional-arguments
+
 import concurrent.futures
 import warnings
 from typing import Any, Iterable, Optional, Union
@@ -48,9 +50,9 @@ class DummyVecRolloutBuffer(RolloutBuffer):
             self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=len(buffers))
         else:
             self._executor = None
-        logger.debug(f"Initializing DummyVecBuf{self.__hash__()}")
+        logger.debug("Initializing DummyVecBuf%s", hash(self))
         self.__patch_methods()
-        logger.debug(f"Initialized DummyVecBuf{self.__hash__()} successfully")
+        logger.debug("Initialized DummyVecBuf%s successfully", hash(self))
 
     def __del__(self):
         """Shut down the optional thread pool executor."""
@@ -68,7 +70,7 @@ class DummyVecRolloutBuffer(RolloutBuffer):
     def full(self, val: bool):
         return val
 
-    def _get_samples(self):
+    def _get_samples(self, *args):
         pass
 
     def __patch_methods(self):
@@ -78,6 +80,8 @@ class DummyVecRolloutBuffer(RolloutBuffer):
             if not_private and callable(getattr(self, attr)):
 
                 class Wrapper:
+                    """Wrapper class to perform some meta-programming magic."""
+
                     def __init__(self, name: str, buffers: list[BaseBuffer], executor: Any = None):
                         self._name = name
                         self._buffers = buffers
@@ -94,4 +98,4 @@ class DummyVecRolloutBuffer(RolloutBuffer):
                         return [t.result() for t in tasks]
 
                 setattr(self, attr, Wrapper(attr, self._buffers, self._executor))
-                logger.debug(f"Patched DummyVecBuf{self.__hash__()}.{attr}")
+                logger.debug("Patched DummyVecBuf%s.%s", hash(self), attr)

@@ -1,5 +1,7 @@
 """Base types for record buffers and no-op array stubs."""
 
+# pylint: disable=unused-argument, too-few-public-methods
+
 from typing import Union
 
 import numpy as np

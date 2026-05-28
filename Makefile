@@ -13,28 +13,28 @@ DOCS_SINGLEHTML_DIR := $(DOCS_BUILD_ROOT)/singlehtml
 DOCS_DOCTREES_DIR := $(DOCS_BUILD_ROOT)/doctrees
 
 docs-dev: docs-clean
-	$(SPHINX_BUILD) -d $(DOCS_DOCTREES_DIR) -b html $(DOCS_SOURCE_DIR) $(DOCS_HTML_DIR)
+	uv run python -m $(SPHINX_BUILD) -d $(DOCS_DOCTREES_DIR) -b html $(DOCS_SOURCE_DIR) $(DOCS_HTML_DIR)
 
 docs: docs-dev
-	@python -c 'from webbrowser import open; from pathlib import Path; open(f"file://{Path.cwd().resolve()}/docs/_build/html/index.html")' || true
-	$(SPHINX_BUILD) -d $(DOCS_DOCTREES_DIR) -b epub $(DOCS_SOURCE_DIR) $(DOCS_EPUB_DIR)
-	$(SPHINX_BUILD) -d $(DOCS_DOCTREES_DIR) -b singlehtml $(DOCS_SOURCE_DIR) $(DOCS_SINGLEHTML_DIR)
+	@uv run python -c 'from webbrowser import open; from pathlib import Path; open(f"file://{Path.cwd().resolve()}/docs/_build/html/index.html")' || true
+	uv run python -m $(SPHINX_BUILD) -d $(DOCS_DOCTREES_DIR) -b epub $(DOCS_SOURCE_DIR) $(DOCS_EPUB_DIR)
+	uv run python -m $(SPHINX_BUILD) -d $(DOCS_DOCTREES_DIR) -b singlehtml $(DOCS_SOURCE_DIR) $(DOCS_SINGLEHTML_DIR)
 
 docs-clean:
 	rm -rf $(DOCS_SOURCE_DIR)/_build
 
 format:
-	ruff check --fix || true
-	ruff format || true
+	uv run python -m ruff check --fix || true
+	uv run python -m ruff format || true
 
 lint:
-	@mypy -p sb3_extra_buffers
+	@uv run python -m mypy -p sb3_extra_buffers
 
 test:
-	@DISABLE_TEST_OBSERVATIONS_SAVE=1 pytest tests/
+	@DISABLE_TEST_OBSERVATIONS_SAVE=1 uv run python -m pytest tests/
 
 docstring:
-	@ruff check --fix --select D sb3_extra_buffers/
+	@uv run python -m ruff check --fix --select D sb3_extra_buffers/
 
 amend:
 	git commit --amend --no-edit

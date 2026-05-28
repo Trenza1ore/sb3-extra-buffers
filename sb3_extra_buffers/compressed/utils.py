@@ -6,7 +6,7 @@ _unsigned_int_types = [np.uint8, np.uint16, np.uint32, np.uint64]
 _signed_int_types = [np.int8, np.int16, np.int32, np.int64]
 _float_types = [np.float32, np.float64]
 _max_val_lookup = {dtype: np.iinfo(dtype).max for dtype in (_unsigned_int_types + _signed_int_types)}
-_max_val_lookup.update({dtype: np.finfo(dtype).max for dtype in _float_types})
+_max_val_lookup.update({dtype: np.finfo(dtype).max for dtype in _float_types})  # pylint: disable=no-member
 
 
 def find_optimal_shape(arr_len: int, dtype: np.dtype = np.uint8) -> tuple[int, int, int]:

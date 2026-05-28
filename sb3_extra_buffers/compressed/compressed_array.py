@@ -1,5 +1,7 @@
 """NumPy ndarray subclass that stores compressed observation bytes."""
 
+# pylint: disable=super-init-not-called, too-many-instance-attributes, too-many-positional-arguments, unused-argument
+
 from threading import Lock
 from typing import Any, Literal, Optional, Union
 
@@ -45,10 +47,10 @@ class CompressedArray(np.ndarray, BaseCompressedBuffer):
         """
         self.obs_shape = obs_shape
         flatten_len = np.prod(obs_shape)
-        self.flatten_config = dict(shape=flatten_len, dtype=dtype)
+        self.flatten_config = {"shape": flatten_len, "dtype": dtype}
 
         # Handle dtypes
-        self.dtypes = dtypes or dict(elem_type=dtype, runs_type=find_smallest_dtype(flatten_len))
+        self.dtypes = dtypes or {"elem_type": dtype, "runs_type": find_smallest_dtype(flatten_len)}
         self._dtype = dtype
 
         # Compress and decompress
@@ -95,7 +97,7 @@ class CompressedArray(np.ndarray, BaseCompressedBuffer):
         """Copy compression state when NumPy creates a derived array view."""
         if obj is None:
             return
-        super().__array_finalize__(obj)
+        np.ndarray.__array_finalize__(self, obj)  # pylint: disable=no-member
         self._suppress_get_item = False
         self._thread_lock = Lock()
         for attr in [
@@ -127,8 +129,7 @@ class CompressedArray(np.ndarray, BaseCompressedBuffer):
             return retrieved
         if isinstance(retrieved, np.ndarray):
             return [self._reconstruct_obs(x) for x in retrieved]
-        else:
-            return self._reconstruct_obs(retrieved)
+        return self._reconstruct_obs(retrieved)
 
     def _reconstruct_obs(self, data: bytes):
         obs = self._decompress(data).reshape(self.obs_shape)

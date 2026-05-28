@@ -1,5 +1,7 @@
 """Torch-based run-length compression into a GPU raw buffer."""
 
+# pylint: disable=too-many-positional-arguments
+
 from collections import namedtuple
 
 import torch as th

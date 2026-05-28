@@ -1,5 +1,7 @@
 """Fill replay buffers before training (buffer warm-up)."""
 
+# pylint: disable=too-many-positional-arguments
+
 from typing import Iterable, Optional, Union
 
 from stable_baselines3.common.base_class import BaseAlgorithm

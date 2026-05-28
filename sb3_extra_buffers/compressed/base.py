@@ -1,5 +1,7 @@
 """Base classes and helpers for compressed observation storage."""
 
+# pylint: disable=too-few-public-methods
+
 import re
 import warnings
 from functools import partial
@@ -36,7 +38,7 @@ def find_buffer_dtypes(
     """Find the best data types to use for CompressedBuffer based on obs shape and compression method."""
     if isinstance(obs_shape, tuple):
         obs_shape = np.prod(obs_shape)
-    buffer_dtypes = dict(elem_type=elem_dtype, runs_type=find_smallest_dtype(obs_shape))
+    buffer_dtypes = {"elem_type": elem_dtype, "runs_type": find_smallest_dtype(obs_shape)}
     if compression_method.endswith("-jit"):
         init_jit(**buffer_dtypes)
     return buffer_dtypes
@@ -99,6 +101,5 @@ class BaseCompressedBuffer:
 class DummyCls:
     """Placeholder type used when optional compression backends are unavailable."""
 
-    def __init__(*args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """Accept arbitrary arguments and perform no initialization."""
-        pass

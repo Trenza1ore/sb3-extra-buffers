@@ -1,5 +1,7 @@
 """CPU compression and decompression method registry."""
 
+# pylint: disable=ungrouped-imports, unused-argument, invalid-name
+
 import gzip
 from collections import namedtuple
 
@@ -14,7 +16,7 @@ HAS_ZSTD: bool = False
 HAS_LZ4: bool = False
 
 try:
-    import isal.igzip as igzip
+    from isal import igzip
 
     HAS_IGZIP: bool = True
 except ImportError:
@@ -193,4 +195,4 @@ try:
 except ImportError:
     logger.warning("Compression extension not installed: lz4")
 
-logger.info(f"Loaded compression methods:\n{', '.join(COMPRESSION_METHOD_MAP)}")
+logger.info("Loaded compression methods:\n%s", ", ".join(COMPRESSION_METHOD_MAP))

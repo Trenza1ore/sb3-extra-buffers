@@ -5,7 +5,7 @@ from typing import Optional
 import numpy as np
 
 
-class RecordBuffer:
+class RecordBuffer:  # pylint: disable=too-many-instance-attributes
     """Store game frames and associated scalars in a fixed-size circular buffer."""
 
     def __init__(
@@ -70,7 +70,7 @@ class RecordBuffer:
         return self.__str__()
 
     # add is replaced by add_filled after the memory has been filled once
-    def add(
+    def add(  # pylint: disable=method-hidden
         self,
         frame: np.ndarray[np.integer],
         reward: np.floating,

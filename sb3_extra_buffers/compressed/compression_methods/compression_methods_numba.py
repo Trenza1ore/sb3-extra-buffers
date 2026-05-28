@@ -1,5 +1,7 @@
 """Numba-accelerated run-length decompression."""
 
+# pylint: disable=unused-argument
+
 import numpy as np
 from numba import njit
 
@@ -8,8 +10,8 @@ from numba import njit
 def _rle_numba_decompress(elements: np.ndarray, runs: np.ndarray, out: np.ndarray) -> np.ndarray:
     """RLE Decompression with Numba JIT."""
     idx = 0
-    for i in range(len(runs)):
-        run_len = int(runs[i])
+    for i, run_len in enumerate(runs):
+        run_len = int(run_len)
         out[idx : idx + run_len] = elements[i]
         idx += run_len
     return out

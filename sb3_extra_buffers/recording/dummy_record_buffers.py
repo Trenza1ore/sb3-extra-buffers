@@ -1,5 +1,7 @@
 """No-op record buffers that skip or minimize frame storage."""
 
+# pylint: disable=unused-argument, too-few-public-methods
+
 from sb3_extra_buffers.recording.base import BaseRecordBuffer, DummyArray
 from sb3_extra_buffers.recording.record_buffer import RecordBuffer
 
@@ -45,4 +47,4 @@ class FramelessRecordBuffer(BaseRecordBuffer):
     def add(self, _, *args, **kwargs) -> None:
         """Record a transition while discarding the frame argument."""
         self._memory.add(self.dummy_frame, *args, **kwargs)
-        self._ptr = self._memory._ptr
+        self._ptr = self._memory._ptr  # pylint: disable=protected-access

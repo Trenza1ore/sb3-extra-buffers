@@ -1,5 +1,7 @@
 """Zstandard compression helpers."""
 
+# pylint: disable=unused-argument, c-extension-no-member
+
 import numpy as np
 import zstd
 
