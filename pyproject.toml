@@ -39,6 +39,10 @@ extra = ["stable_baselines3[extra]"]
 atari = ["stable_baselines3[extra]"]
 vizdoom = ["stable_baselines3[extra]", "vizdoom"]
 
+[dependency-groups]
+# Testing
+test = ["pytest", "pytest-asyncio", "pytest-xdist"]
+
 [project.urls]
 Homepage = "https://compressed-rl.readthedocs.io"
 Documentation = "https://compressed-rl.readthedocs.io"
@@ -78,3 +82,9 @@ py-version = "3.9"
 
 [tool.pylint.FORMAT]
 max-line-length = 120
+
+[tool.pylint.DESIGN]
+max-return = 5
+max-args = 15
+max-locals = 20
+max-branches = 25
