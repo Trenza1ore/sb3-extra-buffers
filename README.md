@@ -13,7 +13,7 @@ Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to red
 - [RL Baselines3 Zoo (training framework for SB3)](https://github.com/DLR-RM/rl-baselines3-zoo)
 
 **Description:**
-Tired of reading a cool RL paper and realizing that the author is storing a **MILLION** observations in their replay buffers? Yeah me too. This project has implemented several compressed buffer classes that replace Stable Baselines3's standard buffers like ReplayBuffer and RolloutBuffer. With as simple as 2-5 lines of extra code and **negligible overhead**, memory usage can be reduced by more than **95%**! Please consider [citing this project](#cite-this-project) if this is helpful to your research :-)
+Tired of reading a cool RL paper and realizing that the author is storing a **MILLION** observations in their replay buffers? Yeah me too. This project has implemented several compressed buffer classes that replace Stable Baselines3's standard buffers like ReplayBuffer and RolloutBuffer. With as simple as 2-5 lines of extra code and **negligible overhead**, memory usage can be reduced by more than **95%**! Please consider [citing this project](#cite-this-project) if this is helpful to your research!
 
 **Main Goal:**
 Reduce the memory consumption of memory buffers in Reinforcement Learning while adding minimal overhead.
@@ -199,24 +199,7 @@ Q1: 2490 | Q2: 4020 | Q3: 4020 | Relative IQR: 0.38 | Min: 2460 | Max: 4020
 Q1: 2690 | Q2: 3400 | Q3: 3880 | Relative IQR: 0.35 | Min: 1230 | Max: 4090
 ```
 ---
-## Pytest
-Make sure `pytest` and optionally `pytest-xdist` are already installed. Tests are compatible with `pytest-xdist` since `DummyVecEnv` is used for all tests.
-```
-# pytest
-pytest tests -v --durations=0 --tb=short
-# pytest-xdist
-pytest tests -n auto -v --durations=0 --tb=short
-```
-
-**Saving Test Observations:**
-By default, test observations are saved to `debug_obs/` for manual inspection during testing. To disable saving observations (e.g., in CI/CD to avoid unnecessary disk I/O), set the `DISABLE_TEST_OBSERVATIONS_SAVE` environment variable:
-```bash
-# Disable saving test observations (e.g., for CI/CD)
-DISABLE_TEST_OBSERVATIONS_SAVE=true pytest tests -v
-```
----
-## Compressed Buffers
-Defined in `sb3_extra_buffers.compressed`
+## Notes
 
 **JIT Before Multi-Processing:**
 When using `rle-jit`, remember to trigger JIT compilation before any multi-processing code is executed via  `find_buffer_dtypes` or `init_jit`.
@@ -249,4 +232,4 @@ If you use this project in your research or work, please cite:
   url={https://arxiv.org/abs/2511.11703},
 }
 ```
-I really appreciate it :-)
+I really appreciate it~
