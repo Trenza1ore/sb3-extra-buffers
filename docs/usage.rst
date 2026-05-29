@@ -110,3 +110,14 @@ Experimental helpers
 The :mod:`sb3_extra_buffers.vec_buf` and :mod:`sb3_extra_buffers.gpu_buffers`
 packages expose experimental helpers. Treat their APIs as less stable than the
 compressed and recording buffer APIs.
+
+:mod:`sb3_extra_buffers.gpu_buffers` adds device-resident replay and rollout buffers.
+See :doc:`api/gpu_buffers` for compression options (``none``, ``rle``, ``zstd``),
+``buffer_device``, slot sizing, and the Pong training examples
+(``examples/example_train_gpu_replay.py``, ``examples/example_train_gpu_rollout.py``).
+
+.. warning::
+
+   GPU buffers are intended for advanced use. Default slot byte capacity is estimated
+   automatically; **you are responsible** for confirming it is large enough for your
+   observations and codec, or for setting ``max_slot_bytes`` explicitly.
