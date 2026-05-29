@@ -1,0 +1,49 @@
+try:
+    from tqdm.rich import tqdm
+except ImportError:
+    from tqdm import tqdm
+
+import numpy as np
+from stable_baselines3 import DQN
+
+from examples.example_train_gpu_replay import ATARI_GAME, BEST_MODEL_DIR, FRAMESTACK, resolve_device
+from sb3_extra_buffers.compressed import DummyCls
+from sb3_extra_buffers.training_utils.atari import make_env
+
+NUM_GAMES_TO_WATCH = 10
+PAUSE_BETWEEN_GAMES = False
+RENDER_GAMES = True
+
+if __name__ == "__main__":
+    device = resolve_device()
+    model = DQN.load(
+        BEST_MODEL_DIR + "/best_model.zip",
+        device=device,
+        custom_objects=dict(replay_buffer_class=DummyCls),
+    )
+    render_mode = "human" if RENDER_GAMES else "rgb_array"
+    vec_env = make_env(env_id=ATARI_GAME, n_envs=1, framestack=FRAMESTACK, render_mode=render_mode)
+    obs = vec_env.reset()
+
+    game_counter = NUM_GAMES_TO_WATCH
+    pbar = tqdm(total=NUM_GAMES_TO_WATCH)
+    scores = []
+    while game_counter > 0:
+        action, _ = model.predict(obs, deterministic=True)
+        obs, reward, done, info = vec_env.step(action)
+        game_info = info[0]
+        if done and not game_info["lives"]:
+            score = game_info["episode"]["r"]
+            print(f"Scored: {score}")
+            scores.append(score)
+            if PAUSE_BETWEEN_GAMES and game_counter > 1:
+                input("Click enter when ready for next match: ")
+            obs = vec_env.reset()
+            game_counter -= 1
+            pbar.update()
+        if RENDER_GAMES:
+            vec_env.render()
+
+    pbar.close()
+    vec_env.close()
+    print(f"Average score: {np.mean(scores):.1f} +/- {np.std(scores):.2f}")

@@ -9,7 +9,7 @@ from sb3_extra_buffers.gpu_buffers.compression_methods.compression_methods impor
     rle_compress,
     rle_decompress,
 )
-from sb3_extra_buffers.gpu_buffers.raw_buffer import RawBuffer
+from sb3_extra_buffers.gpu_buffers.raw_buffer import SlotArena
 
 
 @pytest.mark.parametrize(
@@ -21,25 +21,23 @@ from sb3_extra_buffers.gpu_buffers.raw_buffer import RawBuffer
     ],
 )
 def test_rle_compression_roundtrip(input_arr):
-    buffer = RawBuffer(1000)
-    elem_type = th.int32
-    runs_type = th.int32
+    elem_type = th.uint8
+    runs_type = th.uint16
+    slot_bytes = input_arr.numel() * elem_type.itemsize + input_arr.numel() * runs_type.itemsize
+    arena = SlotArena(n_slots=1, max_slot_bytes=slot_bytes)
 
-    # Compress
-    pos_runs, pos_elem, run_length = rle_compress(input_arr, buffer, elem_type, runs_type)
+    meta = rle_compress(input_arr, arena, slot_id=0, elem_type=elem_type, runs_type=runs_type)
     th_decomp = rle_decompress(
-        buffer,
-        pos_runs,
-        pos_elem,
-        run_length,
-        elem_type,
-        runs_type,
-        dict(size=(input_arr.size(0)), dtype=elem_type),
+        arena,
+        meta,
+        elem_type=elem_type,
+        runs_type=runs_type,
+        arr_configs={"size": input_arr.size(0), "dtype": elem_type},
     )
-    runs = buffer.read_bytes((pos_runs, run_length), runs_type).cpu().numpy().copy().tobytes()
-    elem = buffer.read_bytes((pos_elem, run_length), elem_type).cpu().numpy().copy().tobytes()
 
-    # Decompress
+    runs = arena.read_at(0, meta.pos_runs, meta.run_length, runs_type).cpu().numpy().copy().tobytes()
+    elem = arena.read_at(0, meta.pos_elem, meta.run_length, elem_type).cpu().numpy().copy().tobytes()
+
     rle_numpy_decompress_old(
         data=runs + elem,
         elem_type=np.uint8,
@@ -47,5 +45,4 @@ def test_rle_compression_roundtrip(input_arr):
         arr_configs={"shape": len(input_arr), "dtype": np.uint8},
     )
 
-    # Check correctness
-    th.testing.assert_close(th_decomp, input_arr.to(dtype=th.int))
+    th.testing.assert_close(th_decomp, input_arr)

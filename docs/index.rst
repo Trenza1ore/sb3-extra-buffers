@@ -57,8 +57,20 @@ Package layout
    Atari environment creation, evaluation, and replay-buffer warm-up helpers.
 
 ``sb3_extra_buffers.vec_buf`` and ``sb3_extra_buffers.gpu_buffers``
-   Experimental helpers for multi-buffer delegation and GPU-oriented byte
-   storage.
+   Experimental helpers. :mod:`sb3_extra_buffers.vec_buf` delegates rollout API calls
+   across multiple buffers. :mod:`sb3_extra_buffers.gpu_buffers` provides
+   :class:`~sb3_extra_buffers.gpu_buffers.gpu_replay.GpuReplayBuffer` and
+   :class:`~sb3_extra_buffers.gpu_buffers.gpu_rollout.GpuRolloutBuffer`, which store
+   observations on a Torch device (``buffer_device``) with optional ``none``, ``rle``, or
+   ``zstd`` compression. See :doc:`api/gpu_buffers`.
+
+.. warning::
+
+   GPU buffers are an **advanced, experimental** feature. You are responsible for ensuring
+   each observation slot has enough bytes (``max_slot_bytes``); defaults are heuristics
+   and may be insufficient for high-entropy images or tight Zstd budgets. Start from the
+   example scripts under ``examples/example_train_gpu_*.py`` and validate on your
+   hardware before long runs.
 
 How do I know the compressed buffers are implemented correctly?
 ---------------------------------------------------------------
