@@ -1,5 +1,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/sb3-extra-buffers)](https://pypi.org/project/sb3-extra-buffers/) [![Pepy Total Downloads](https://img.shields.io/pepy/dt/sb3-extra-buffers?uuid=12076e13275f4891a087b22b9c031a9e)](https://pepy.tech/projects/sb3-extra-buffers) [![PyPI - License](https://img.shields.io/pypi/l/sb3-extra-buffers)](https://github.com/Trenza1ore/sb3-extra-buffers/blob/main/LICENSE) [![Tests](https://github.com/Trenza1ore/sb3-extra-buffers/actions/workflows/tests.yml/badge.svg)](https://github.com/Trenza1ore/sb3-extra-buffers/actions/workflows/tests.yml)
 
+[![Documentation](https://img.shields.io/badge/Documentation-brown?style=for-the-badge&logo=readthedocs&link=https%3A%2F%2Fcompressed-rl.readthedocs.io%2Fen%2Flatest%2Findex.html)](https://compressed-rl.readthedocs.io)
+
 # sb3-extra-buffers
 Unofficial implementation of extra Stable-Baselines3 buffer classes. Aims to reduce memory usage drastically with minimal overhead. Featured in [SB3 docs](https://stable-baselines3.readthedocs.io/en/master/misc/projects.html#sb3-extra-buffers-ram-expansions-are-overrated-just-compress-your-observations) :-)
 
