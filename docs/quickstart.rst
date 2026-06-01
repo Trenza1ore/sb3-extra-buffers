@@ -38,7 +38,8 @@ Optional extras can be installed individually:
 Choosing compression algorithm
 ------------------------------
 
-Check :doc:`algorithms`
+Check :doc:`algorithms`. For memory savings versus end-to-end training time on
+Atari, see :doc:`benchmarks` and :doc:`speed`.
 
 
 Choosing dtypes

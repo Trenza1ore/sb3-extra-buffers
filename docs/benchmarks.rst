@@ -265,4 +265,5 @@ Training validation
 The table above measures buffer memory and sampling latency. To confirm that
 compressed buffers work end-to-end in SB3 training, see
 :doc:`validation` for evaluation results from the example PPO and DQN scripts
-(10M steps on Atari with ``rle-jit``).
+(10M steps on Atari with ``rle-jit``). For wall-clock training time with
+``zstd-3`` versus the default SB3 buffers, see :doc:`speed`.

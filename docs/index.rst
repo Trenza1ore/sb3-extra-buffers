@@ -13,7 +13,8 @@ The package is designed for reinforcement-learning workloads with large replay
 or rollout buffers, especially Atari-style image observations where storing raw
 frames can dominate memory use. As shown in :doc:`benchmarks` on Atari games, the
 best configurations reduce memory usage by more than 95% while keeping latency close
-to the default buffers in SB3.
+to the default buffers in SB3. See :doc:`speed` for end-to-end training wall-clock
+time on example Atari runs.
 
 Why compress buffers?
 ---------------------
@@ -128,6 +129,7 @@ What is included
    algorithms
    usage
    benchmarks
+   speed
    validation
    citation
    api/index
