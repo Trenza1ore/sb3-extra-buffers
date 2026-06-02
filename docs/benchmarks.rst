@@ -11,14 +11,14 @@ Benchmark setup
 - Vectorized environments: ``4``.
 - Buffer size: ``40,000`` transitions, split across vectorized environments.
 - Hardware: M4 MacBook Air.
-- Saving test: the same observations are added to each buffer for fairness.
-- Loading test: rollout-buffer trajectories are sampled with batch size ``64``.
+- Saving test: the same observations are added to each buffer for fairness, uses replay buffer. Check :download:`example_eval_memory_saving.py <../examples/example_eval_memory_saving.py>`.
+- Loading test: rollout-buffer trajectories are sampled with batch size ``64``, uses rollout buffer. Check :download:`example_eval_memory_loading.py <../examples/example_eval_memory_loading.py>`.
 - Baseline: SB3 ``ReplayBuffer`` or ``RolloutBuffer`` without compression.
 
 Important caveats:
 
 - SB3's ``RolloutBuffer`` stores observations as ``np.float32``, which is 4x
-  larger than ``np.uint8`` observations.
+  larger than ``np.uint8`` observations. (Fixed in SB3 2.7.1)
 - ``igzip`` does not benefit from Intel SIMD acceleration on Apple Silicon.
 - Transfer latency between CPU and GPU may differ on other systems.
 
@@ -26,8 +26,8 @@ Summary
 -------
 
 The main takeaway is that ``zstd`` gives a strong balance between memory saving
-and latency. ``zstd-1`` through ``zstd-5`` are good first choices, and the README
-recommends ``zstd-3`` as a practical default. ``gzip0`` should usually be
+and latency. ``zstd-1`` through ``zstd-5`` are good first choices, and we
+recommend ``zstd-3`` as a practical default. ``gzip0`` should usually be
 avoided because it keeps similar latency to ``zstd-5`` while using much more
 memory.
 
