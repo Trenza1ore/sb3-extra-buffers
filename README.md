@@ -39,6 +39,8 @@ pip install "sb3-extra-buffers[vizdoom]" # installs vizdoom
 
 **Current Progress & Available Features:**
 - Memory Saving: [reported here](https://compressed-rl.readthedocs.io/latest/benchmarks.html)
+- Training Speed: [reported here](https://compressed-rl.readthedocs.io/latest/speed.html)
+- Validation Experiments: [reported here](https://compressed-rl.readthedocs.io/latest/validation.html)
 - Progress Tracker Issue: https://github.com/Trenza1ore/sb3-extra-buffers/issues/1
 
 **Motivation:**
@@ -49,7 +51,7 @@ Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so le
 - `Color Palette` game frames from retro video games
 - `Grayscale` observations
 - `RGB (Color)` observations
-- For noisy input with a lot of variation (mostly `RGB`), using `zstd` is recommended, run-length encoding won't work as great and can potentially even increase memory usage. [See benchmark](#benchmark-for-compressed-buffers-on-mspacmannoframeskip-v4).
+- For noisy input with a lot of variation (mostly `RGB`), using `zstd` is recommended, run-length encoding won't work as great and can potentially even increase memory usage. [See benchmark](https://compressed-rl.readthedocs.io/latest/benchmarks.html).
 
 **Implemented Compression Methods:**
 - `none` No compression other than casting to `elem_type` and storing as `bytes`.
