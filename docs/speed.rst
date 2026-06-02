@@ -15,10 +15,10 @@ Hardware
 ~~~~~~~~
 
 - Mac mini (Apple M4, 16 GB RAM)
-- ``device="mps"`` when MPS is available
+- ``device="mps"``
 
-Software
-~~~~~~~~
+Libraries
+~~~~~~~~~
 
 - Stable-Baselines3 2.8.0
 - PyTorch 2.12.0
@@ -30,9 +30,9 @@ with dtypes from :func:`~sb3_extra_buffers.compressed.find_buffer_dtypes`.
 PPO on ``PongNoFrameskip-v4``
 -----------------------------
 
-Hyperparameters follow the RL Zoo preset for
+Hyperparameters follow the preset on Huggingface:
 `sb3/ppo-PongNoFrameskip-v4 <https://huggingface.co/sb3/ppo-PongNoFrameskip-v4>`__
-and match :download:`example_train_rollout.py <../examples/example_train_rollout.py>`:
+and check :download:`example_train_rollout.py <../examples/example_train_rollout.py>` for code:
 
 - Frame stack: ``1`` (no stacking)
 - ``n_envs``: ``8`` (train and eval)
@@ -64,9 +64,9 @@ over the default buffer while keeping the same SB3 training loop.
 DQN on ``MsPacmanNoFrameskip-v4``
 ---------------------------------
 
-Hyperparameters follow the RL Zoo preset for
+Hyperparameters follow the preset on Huggingface:
 `sb3/dqn-MsPacmanNoFrameskip-v4 <https://huggingface.co/sb3/dqn-MsPacmanNoFrameskip-v4>`__
-and match :download:`example_train_replay.py <../examples/example_train_replay.py>`:
+and check :download:`example_train_replay.py <../examples/example_train_replay.py>` for code:
 
 - Frame stack: ``4``
 - ``n_envs``: ``1`` (train), ``8`` (eval)
