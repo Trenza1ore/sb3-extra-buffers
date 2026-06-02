@@ -3,25 +3,21 @@ Validation
 
 The repository includes example scripts for training and evaluating SB3 models
 with compressed buffers. They are intended to verify that the buffer classes can
-be used through normal SB3 algorithm constructors rather than through a separate
-training loop. Browse the examples in the
-`examples directory <https://github.com/Trenza1ore/sb3-extra-buffers/tree/main/examples>`__.
+be used with minimal change to normal SB3 training code.
+Browse the examples in the `examples directory <https://github.com/Trenza1ore/sb3-extra-buffers/tree/main/examples>`__.
 
 Training setup
 --------------
 
-The runs below used the same Atari environments and RL Zoo hyperparameters as
-:download:`example_train_rollout.py <../examples/example_train_rollout.py>` and
-:download:`example_train_replay.py <../examples/example_train_replay.py>`,
-following the presets published for
+The runs below used the same Atari environments and hyperparameters as the presets on Huggingface:
 `sb3/ppo-PongNoFrameskip-v4 <https://huggingface.co/sb3/ppo-PongNoFrameskip-v4>`__,
 `sb3/ppo-MsPacmanNoFrameskip-v4 <https://huggingface.co/sb3/ppo-MsPacmanNoFrameskip-v4>`__,
 and
 `sb3/dqn-MsPacmanNoFrameskip-v4 <https://huggingface.co/sb3/dqn-MsPacmanNoFrameskip-v4>`__.
 
-- Hardware: Mac mini (Apple M4, 16 GB RAM)
-- Software: Stable-Baselines3 2.8.0, PyTorch 2.12.0, sb3-extra-buffers 0.5.1
-- Device: ``mps`` when available
+- Hardware: M4 Macbook Air
+- Software: Stable-Baselines3 2.7.0, sb3-extra-buffers 0.4.3
+- Device: ``mps``
 - Training length: 10M environment steps
 
 For end-to-end wall-clock time comparing default SB3 buffers with
