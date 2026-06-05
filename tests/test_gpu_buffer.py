@@ -11,11 +11,11 @@ from sb3_extra_buffers.gpu_buffers import GpuReplayBuffer, GpuRolloutBuffer, fin
 from sb3_extra_buffers.gpu_buffers.compression_methods import COMPRESSION_METHOD_MAP
 from sb3_extra_buffers.gpu_buffers.observation_store import (
     DenseObservationStore,
-    SlotArena,
-    SlotArenaObservationStore,
+    RawObservationStore,
     create_observation_store,
 )
-from sb3_extra_buffers.gpu_buffers.utils import estimate_max_slot_bytes
+from sb3_extra_buffers.gpu_buffers.raw_buffer import RawBuffer, SharedRawHeap
+from sb3_extra_buffers.gpu_buffers.utils import estimate_max_slot_bytes, estimate_total_heap_bytes
 
 
 def _compression_methods():
@@ -26,7 +26,7 @@ def _compression_methods():
 
 
 @pytest.mark.parametrize("compression_method", _compression_methods())
-def test_slot_arena_no_cross_slot_corruption(compression_method):
+def test_raw_heap_no_cross_cell_corruption(compression_method):
     buffer_size = 4
     n_envs = 2
     flat_len = 8
@@ -45,14 +45,22 @@ def test_slot_arena_no_cross_slot_corruption(compression_method):
         )
     else:
         codec = COMPRESSION_METHOD_MAP[compression_method]
-        slot_bytes = estimate_max_slot_bytes(flat_len, elem_type, dtypes["runs_type"], compression_method)
+        n_cells = buffer_size * n_envs
+        heap_bytes = estimate_total_heap_bytes(
+            n_cells,
+            flat_len,
+            elem_type,
+            dtypes["runs_type"],
+            compression_method,
+        )
+        shared_heap = SharedRawHeap(n_cells, heap_bytes, device="cpu")
 
-        def compress(arr, arena, slot_id, **kwargs):
-            return codec.compress(arr, arena, slot_id, **kwargs)
+        def compress(arr, buffer, byte_start, **kwargs):
+            return codec.compress(arr, buffer, byte_start, **kwargs)
 
-        def decompress(arena, meta, **kwargs):
+        def decompress(buffer, meta, **kwargs):
             return codec.decompress(
-                arena,
+                buffer,
                 meta,
                 elem_type=elem_type,
                 runs_type=dtypes["runs_type"],
@@ -60,8 +68,7 @@ def test_slot_arena_no_cross_slot_corruption(compression_method):
                 **kwargs,
             )
 
-        arena = SlotArena(buffer_size * n_envs, slot_bytes, device="cpu")
-        store = SlotArenaObservationStore(
+        store = RawObservationStore(
             buffer_size,
             n_envs,
             flat_len,
@@ -71,7 +78,7 @@ def test_slot_arena_no_cross_slot_corruption(compression_method):
             compress=compress,
             decompress=decompress,
             compression_method=compression_method,
-            arena=arena,
+            shared_heap=shared_heap,
         )
 
     first = th.arange(flat_len, dtype=elem_type)
@@ -81,6 +88,65 @@ def test_slot_arena_no_cross_slot_corruption(compression_method):
 
     th.testing.assert_close(store.read(0, 0), first)
     th.testing.assert_close(store.read(1, 1), second)
+
+
+@pytest.mark.parametrize("compression_method", _compression_methods())
+def test_raw_heap_growth_does_not_corrupt_neighbor(compression_method):
+    if compression_method == "none":
+        pytest.skip("dense store has no heap growth path")
+    buffer_size = 2
+    n_envs = 1
+    flat_len = 64
+    dtypes = find_gpu_buffer_dtypes((8, 8), compression_method=compression_method)
+    elem_type = dtypes["elem_type"]
+    arr_configs = {"size": flat_len, "dtype": elem_type}
+    codec = COMPRESSION_METHOD_MAP[compression_method]
+    n_cells = buffer_size * n_envs
+    heap_bytes = estimate_total_heap_bytes(
+        n_cells,
+        flat_len,
+        elem_type,
+        dtypes["runs_type"],
+        compression_method,
+    )
+    shared_heap = SharedRawHeap(n_cells, heap_bytes, device="cpu")
+
+    def compress(arr, buffer, byte_start, **kwargs):
+        return codec.compress(arr, buffer, byte_start, **kwargs)
+
+    def decompress(buffer, meta, **kwargs):
+        return codec.decompress(
+            buffer,
+            meta,
+            elem_type=elem_type,
+            runs_type=dtypes["runs_type"],
+            arr_configs=arr_configs,
+            **kwargs,
+        )
+
+    store = RawObservationStore(
+        buffer_size,
+        n_envs,
+        flat_len,
+        elem_type,
+        "cpu",
+        field_offset=0,
+        compress=compress,
+        decompress=decompress,
+        compression_method=compression_method,
+        shared_heap=shared_heap,
+    )
+
+    small = th.zeros(flat_len, dtype=elem_type)
+    neighbor = th.randint(0, 255, (flat_len,), dtype=elem_type)
+    store.write(0, 0, small)
+    store.write(1, 0, neighbor)
+    neighbor_before = store.read(1, 0).clone()
+    grown = th.zeros(flat_len, dtype=elem_type)
+    grown[0] = 1
+    store.write(0, 0, grown)
+    th.testing.assert_close(store.read(1, 0), neighbor_before)
+    th.testing.assert_close(store.read(0, 0), grown)
 
 
 @pytest.mark.parametrize("compression_method", _compression_methods())
@@ -116,6 +182,37 @@ def test_gpu_replay_add_sample(compression_method):
     assert samples.observations.device.type == "cpu"
 
 
+@pytest.mark.parametrize("compression_method", ["rle"])
+def test_gpu_replay_compact_on_wrap(compression_method):
+    obs_space = spaces.Box(low=0, high=255, shape=(2, 2), dtype=np.uint8)
+    action_space = spaces.Discrete(2)
+    buffer_size = 4
+    n_envs = 1
+    dtypes = find_gpu_buffer_dtypes(obs_space.shape, compression_method=compression_method)
+
+    buffer = GpuReplayBuffer(
+        buffer_size=buffer_size,
+        observation_space=obs_space,
+        action_space=action_space,
+        n_envs=n_envs,
+        compression_method=compression_method,
+        dtypes=dtypes,
+        buffer_device="cpu",
+        device="cpu",
+    )
+    assert buffer.shared_heap is not None
+
+    for step in range(buffer_size * 2):
+        obs = np.full((n_envs, 2, 2), step % 3, dtype=np.uint8)
+        next_obs = obs + 1
+        buffer.add(obs, next_obs, np.array([0]), np.array([1.0]), np.array([0.0]), [{}])
+
+    assert buffer.full
+    assert buffer.shared_heap.data_end <= buffer.shared_heap.buffer.size
+    samples = buffer.sample(2)
+    assert samples.observations.shape == (2, 2, 2)
+
+
 @pytest.mark.parametrize("compression_method", _compression_methods())
 def test_gpu_rollout_get(compression_method):
     obs_space = spaces.Box(low=0, high=255, shape=(2, 2), dtype=np.uint8)
@@ -148,6 +245,8 @@ def test_gpu_rollout_get(compression_method):
     assert len(batches) == buffer_size * n_envs // 4
     assert batches[0].observations.shape[0] == 4
     assert batches[0].observations.device.type == "cpu"
+    if buffer.shared_heap is not None:
+        assert buffer.shared_heap.data_end <= buffer.shared_heap.buffer.size
 
 
 def test_dense_observation_store_flatten():
@@ -170,11 +269,14 @@ def test_zstd_roundtrip():
     flat_len = 64
     elem_type = th.uint8
     input_arr = th.randint(0, 255, (flat_len,), dtype=elem_type)
-    slot_bytes = estimate_max_slot_bytes(flat_len, elem_type, th.uint16, "zstd")
-    arena = SlotArena(1, slot_bytes, device="cpu")
-    meta = zstd_compress(input_arr, arena, slot_id=0, elem_type=elem_type)
+    heap_bytes = max(
+        estimate_max_slot_bytes(flat_len, elem_type, th.uint16, "zstd"),
+        flat_len + 32,
+    )
+    buffer = RawBuffer(heap_bytes, device="cpu")
+    meta = zstd_compress(input_arr, buffer, byte_start=0, elem_type=elem_type)
     output = zstd_decompress(
-        arena,
+        buffer,
         meta,
         elem_type=elem_type,
         runs_type=th.uint16,

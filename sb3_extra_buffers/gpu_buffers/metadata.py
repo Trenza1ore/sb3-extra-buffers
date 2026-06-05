@@ -5,12 +5,13 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class SlotMetadata:
-    """Compression metadata for one observation slot."""
+    """Compression metadata for one observation cell in the raw heap."""
 
-    slot_id: int
+    byte_start: int
     pos_runs: int
     pos_elem: int
     run_length: int
+    payload_bytes: int
 
 
 def arr_config_length(arr_configs: dict) -> int:

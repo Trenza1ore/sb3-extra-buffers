@@ -13,8 +13,8 @@ from sb3_extra_buffers import sb3_version
 from sb3_extra_buffers.gpu_buffers.base import BaseGpuBuffer
 from sb3_extra_buffers.gpu_buffers.gpu_replay import _normalize_obs_tensor, _prepare_obs_batch
 from sb3_extra_buffers.gpu_buffers.observation_store import create_observation_store
-from sb3_extra_buffers.gpu_buffers.raw_buffer import SlotArena
-from sb3_extra_buffers.gpu_buffers.utils import estimate_max_slot_bytes, numpy_dtype_to_torch
+from sb3_extra_buffers.gpu_buffers.raw_buffer import SharedRawHeap
+from sb3_extra_buffers.gpu_buffers.utils import estimate_total_heap_bytes, numpy_dtype_to_torch
 from sb3_extra_buffers.logging import logger
 
 LEGACY_BEHAVIOR = sb3_version() < (2, 7, 1)
@@ -46,6 +46,7 @@ class GpuRolloutBuffer(RolloutBuffer, BaseGpuBuffer):
         compression_kwargs: Optional[dict] = None,
         decompression_kwargs: Optional[dict] = None,
         buffer_device: Optional[Union[th.device, str]] = None,
+        heap_bytes: Optional[int] = None,
         max_slot_bytes: Optional[int] = None,
     ):
         """Create a rollout buffer with device-resident observations."""
@@ -79,6 +80,7 @@ class GpuRolloutBuffer(RolloutBuffer, BaseGpuBuffer):
             flatten_config=self.flatten_config,
         )
         self.compression_method = compression_method
+        self.heap_bytes = heap_bytes
         self.max_slot_bytes = max_slot_bytes
         self.reset()
 
@@ -86,19 +88,23 @@ class GpuRolloutBuffer(RolloutBuffer, BaseGpuBuffer):
         """Clear rollout storage and reset the write position."""
         elem_type = self.dtypes["elem_type"]
         runs_type = self.dtypes["runs_type"]
-        slot_bytes = self.max_slot_bytes or estimate_max_slot_bytes(
-            self.flatten_len,
-            elem_type,
-            runs_type,
-            self.compression_method,
-        )
-        shared_arena = None
-        if self.compression_method != "none":
-            shared_arena = SlotArena(
-                self.buffer_size * self.n_envs,
-                slot_bytes,
-                device=self.buffer_device,
+        n_cells = self.buffer_size * self.n_envs
+        if self.heap_bytes is not None:
+            total_heap_bytes = self.heap_bytes
+        elif self.max_slot_bytes is not None:
+            total_heap_bytes = n_cells * self.max_slot_bytes
+        else:
+            total_heap_bytes = estimate_total_heap_bytes(
+                n_cells,
+                self.flatten_len,
+                elem_type,
+                runs_type,
+                self.compression_method,
             )
+
+        self.shared_heap = None
+        if self.compression_method != "none":
+            self.shared_heap = SharedRawHeap(n_cells, total_heap_bytes, device=self.buffer_device)
 
         self.obs_store = create_observation_store(
             self.compression_method,
@@ -110,8 +116,7 @@ class GpuRolloutBuffer(RolloutBuffer, BaseGpuBuffer):
             field_offset=0,
             compress=self._compress,
             decompress=self._decompress,
-            max_slot_bytes=slot_bytes,
-            shared_arena=shared_arena,
+            shared_heap=self.shared_heap,
             runs_type=runs_type,
         )
 
@@ -159,6 +164,8 @@ class GpuRolloutBuffer(RolloutBuffer, BaseGpuBuffer):
         self.pos += 1
         if self.pos == self.buffer_size:
             self.full = True
+            if self.shared_heap is not None:
+                self.shared_heap.compact()
 
     def get(self, batch_size: Optional[int] = None) -> Generator[RolloutBufferSamples, None, None]:
         """Yield shuffled rollout minibatches after the buffer is full."""

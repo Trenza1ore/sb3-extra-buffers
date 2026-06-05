@@ -67,7 +67,7 @@ Package layout
 .. warning::
 
    GPU buffers are an **advanced, experimental** feature. You are responsible for ensuring
-   each observation slot has enough bytes (``max_slot_bytes``); defaults are heuristics
+   the observation heap has enough bytes (``heap_bytes``); defaults are heuristics
    and may be insufficient for high-entropy images or tight Zstd budgets. Start from the
    example scripts under ``examples/example_train_gpu_*.py`` and validate on your
    hardware before long runs.

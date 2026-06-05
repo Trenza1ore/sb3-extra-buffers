@@ -83,6 +83,7 @@ Reinforcement Learning is quite memory-hungry due to massive buffer sizes, so le
   - `zstd-1` ~ `zstd-5` seems to be the sweet spot.
   - `gzip0` should be avoided, saving / loading has similar latency as `zstd-5`, but 13x bigger.
   - MsPacman at `84x84` resolution is too visually noisy for `rle` , although decompression isn't half-bad
+  - GPU buffer default ``heap_bytes`` uses the Save Mem % column below (×1.5 headroom); re-fit via ``scripts/fit_heap_heuristic.py``
 
 | Compression     | Save Mem | Save Mem % | Save Latency  | Load Mem | Load Mem %  | Load Latency     |
 |-----------------|----------|------------|---------------|----------|-------------|------------------|

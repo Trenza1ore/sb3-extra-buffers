@@ -11,15 +11,16 @@ GPU Buffers
 
 .. caution::
 
-   **You are responsible for slot sizing.** Compressed observations are stored in fixed-size
-   :class:`~sb3_extra_buffers.gpu_buffers.raw_buffer.SlotArena` slots. If a codec produces
-   more bytes than a slot allows, compression raises an error or data may be unusable.
-   By default, buffers estimate per-slot capacity via
-   :func:`~sb3_extra_buffers.gpu_buffers.utils.estimate_max_slot_bytes`, but that estimate
-   is a heuristic (especially for ``zstd``). For large or high-entropy observations, set
-   ``max_slot_bytes`` explicitly on :class:`~sb3_extra_buffers.gpu_buffers.gpu_replay.GpuReplayBuffer`
+   **You are responsible for heap sizing.** Compressed observations are stored in a single
+   packed byte heap (:class:`~sb3_extra_buffers.gpu_buffers.raw_buffer.RawBuffer`) with
+   per-cell ``start_idx`` / ``lengths``. If the heap runs out of space, compression raises
+   an error. By default, buffers set heap capacity via
+   :func:`~sb3_extra_buffers.gpu_buffers.utils.estimate_total_heap_bytes` (per-cell
+   heuristic × number of cells). For large or high-entropy observations, set
+   ``heap_bytes`` explicitly on :class:`~sb3_extra_buffers.gpu_buffers.gpu_replay.GpuReplayBuffer`
    or :class:`~sb3_extra_buffers.gpu_buffers.gpu_rollout.GpuRolloutBuffer` and validate with
-   your observation distribution.
+   your observation distribution. The deprecated ``max_slot_bytes`` argument is interpreted
+   as per-cell capacity and multiplied by the cell count.
 
 Overview
 --------
@@ -43,12 +44,12 @@ rewards, dones, etc.) remain NumPy arrays like the CPU buffers.
 +==================+====================+==================================================+
 | ``none``         | Dense tensor       | Full-size flat obs on ``buffer_device``           |
 +------------------+--------------------+--------------------------------------------------+
-| ``rle``          | :class:`SlotArena` | Run-length encoding in device slot bytes       |
+| ``rle``          | Packed raw heap    | Run-length encoding in device byte storage       |
 +------------------+--------------------+--------------------------------------------------+
-| ``zstd``         | :class:`SlotArena` | CPU Zstd round-trip into slot bytes; needs     |
+| ``zstd``         | Packed raw heap    | CPU Zstd round-trip into heap bytes; needs       |
 |                  |                    | ``pip install "sb3-extra-buffers[zstd]"``        |
 +------------------+--------------------+--------------------------------------------------+
-| ``zstd3``, etc.  | :class:`SlotArena` | Shorthand for ``compresslevel`` (same as CPU)  |
+| ``zstd3``, etc.  | Packed raw heap    | Shorthand for ``compresslevel`` (same as CPU)    |
 +------------------+--------------------+--------------------------------------------------+
 
 Example scripts (Pong, ``PongNoFrameskip-v4``):
@@ -134,7 +135,7 @@ Replay buffer with RLE on CUDA:
            dtypes=dtypes,
            compression_method="rle",
            buffer_device=device,
-           # max_slot_bytes=...,  # override if estimate_max_slot_bytes is too small
+           # heap_bytes=...,  # override if estimate_total_heap_bytes is too small
        ),
        device=device,
    )
@@ -159,16 +160,44 @@ Rollout buffer with optional Zstd (when installed):
        device=device,
    )
 
-Slot sizing
------------
+Heap layout and compaction
+--------------------------
 
-Each compressed observation occupies one slot in a shared byte tensor of shape
-``(n_slots, max_slot_bytes)``. ``n_slots`` depends on buffer geometry (replay vs rollout,
-``n_envs``, whether next-observations share storage). ``max_slot_bytes`` defaults to:
+Compressed observations share one :class:`~sb3_extra_buffers.gpu_buffers.raw_buffer.RawBuffer`
+backed by :class:`~sb3_extra_buffers.gpu_buffers.raw_buffer.SharedRawHeap`. Each cell has a
+``start_idx`` and ``lengths`` entry; codec metadata (``pos_runs``, ``pos_elem``, ``run_length``)
+is stored relative to that cell's byte offset.
 
-- ``none``: ``flat_len * elem_itemsize``
-- ``rle``: raw size + run metadata upper bound
-- ``zstd``: Zstd compress-bound approximation (``raw + raw//255 + 64``)
+**Compaction** packs live payloads and resets ``data_end`` to roughly ``sum(lengths)``:
 
-If compression fails with a slot capacity error, increase ``max_slot_bytes``. When in doubt,
+- :class:`~sb3_extra_buffers.gpu_buffers.gpu_replay.GpuReplayBuffer` compacts when the write
+  cursor wraps after the buffer is full.
+- :class:`~sb3_extra_buffers.gpu_buffers.gpu_rollout.GpuRolloutBuffer` compacts when the
+  rollout buffer becomes full (before ``get()``).
+
+Default heap capacity is ``n_cells * estimate_max_slot_bytes(...)`` where ``n_cells`` depends
+on buffer geometry (replay vs rollout, ``n_envs``, shared next-obs storage). Per-cell size uses
+MsPacman **Save Mem %** ratios from the README benchmark, fitted per codec family and level
+(see ``scripts/fit_heap_heuristic.py``), scaled by ``flat_len * elem_size * overalloc_factor``
+(default **1.5**). All documented levels are accepted; unmeasured levels use polynomial
+extrapolation clamped to each family's benchmark min/max ratio.
+
+Supported level ranges (invalid levels raise ``ValueError``):
+
+- ``gzip``: 0–9
+- ``igzip``: 0–3
+- ``zstd``: 1–22 or -100–-1 (bare ``zstd`` uses level -3)
+- ``lz4-frame``: negatives and 0–16
+- ``lz4-block``: negatives, 0, and 1–12
+
+Re-fit after updating the benchmark table::
+
+   uv pip install scipy
+   uv run scripts/fit_heap_heuristic.py
+
+Copy the printed constants into :mod:`sb3_extra_buffers.gpu_buffers.size_estimation`.
+
+After compaction, ``data_end`` reflects actual compressed usage; peak allocation remains ``heap_bytes``.
+
+If compression fails with a heap capacity error, increase ``heap_bytes``. When in doubt,
 log compressed sizes from your environment and add headroom.
