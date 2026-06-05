@@ -14,8 +14,8 @@ from stable_baselines3.common.vec_env import VecNormalize
 
 from sb3_extra_buffers.gpu_buffers.base import BaseGpuBuffer
 from sb3_extra_buffers.gpu_buffers.observation_store import create_observation_store
-from sb3_extra_buffers.gpu_buffers.raw_buffer import SlotArena
-from sb3_extra_buffers.gpu_buffers.utils import estimate_max_slot_bytes, numpy_dtype_to_torch
+from sb3_extra_buffers.gpu_buffers.raw_buffer import SharedRawHeap
+from sb3_extra_buffers.gpu_buffers.utils import estimate_total_heap_bytes, numpy_dtype_to_torch
 
 
 def _elem_bounds(elem_type: th.dtype) -> tuple[Union[int, float], Union[int, float]]:
@@ -69,6 +69,7 @@ class GpuReplayBuffer(ReplayBuffer, BaseGpuBuffer):
         decompression_kwargs: Optional[dict] = None,
         output_dtype: Literal["raw", "float"] = "raw",
         buffer_device: Optional[Union[th.device, str]] = None,
+        heap_bytes: Optional[int] = None,
         max_slot_bytes: Optional[int] = None,
     ):
         """Create a replay buffer with device-resident observations."""
@@ -110,19 +111,23 @@ class GpuReplayBuffer(ReplayBuffer, BaseGpuBuffer):
         n_fields = 1 if optimize_memory_usage else 2
         elem_type = self.dtypes["elem_type"]
         runs_type = self.dtypes["runs_type"]
-        slot_bytes = max_slot_bytes or estimate_max_slot_bytes(
-            self.flatten_len,
-            elem_type,
-            runs_type,
-            compression_method,
-        )
-        shared_arena = None
-        if compression_method != "none":
-            shared_arena = SlotArena(
-                self.buffer_size * self.n_envs * n_fields,
-                slot_bytes,
-                device=self.buffer_device,
+        n_cells = self.buffer_size * self.n_envs * n_fields
+        if heap_bytes is not None:
+            total_heap_bytes = heap_bytes
+        elif max_slot_bytes is not None:
+            total_heap_bytes = n_cells * max_slot_bytes
+        else:
+            total_heap_bytes = estimate_total_heap_bytes(
+                n_cells,
+                self.flatten_len,
+                elem_type,
+                runs_type,
+                compression_method,
             )
+
+        self.shared_heap = None
+        if compression_method != "none":
+            self.shared_heap = SharedRawHeap(n_cells, total_heap_bytes, device=self.buffer_device)
 
         self.obs_store = create_observation_store(
             compression_method,
@@ -134,9 +139,9 @@ class GpuReplayBuffer(ReplayBuffer, BaseGpuBuffer):
             field_offset=0,
             compress=self._compress,
             decompress=self._decompress,
-            max_slot_bytes=slot_bytes,
-            shared_arena=shared_arena,
+            shared_heap=self.shared_heap,
             runs_type=runs_type,
+            n_fields=n_fields,
         )
         self.next_obs_store = None
         if not optimize_memory_usage:
@@ -150,9 +155,9 @@ class GpuReplayBuffer(ReplayBuffer, BaseGpuBuffer):
                 field_offset=1,
                 compress=self._compress,
                 decompress=self._decompress,
-                max_slot_bytes=slot_bytes,
-                shared_arena=shared_arena,
+                shared_heap=self.shared_heap,
                 runs_type=runs_type,
+                n_fields=n_fields,
             )
 
         self.actions = np.zeros(
@@ -203,6 +208,8 @@ class GpuReplayBuffer(ReplayBuffer, BaseGpuBuffer):
         self.pos += 1
         if self.pos == self.buffer_size:
             self.full = True
+            if self.shared_heap is not None:
+                self.shared_heap.compact()
             self.pos = 0
 
     def _get_samples(self, batch_inds: np.ndarray, env: Optional[VecNormalize] = None) -> ReplayBufferSamples:

@@ -7,7 +7,7 @@ from typing import Callable, Optional, Union
 import torch as th
 
 from sb3_extra_buffers.gpu_buffers.metadata import SlotMetadata
-from sb3_extra_buffers.gpu_buffers.raw_buffer import SlotArena
+from sb3_extra_buffers.gpu_buffers.raw_buffer import SharedRawHeap
 from sb3_extra_buffers.gpu_buffers.utils import estimate_max_slot_bytes
 
 
@@ -65,8 +65,8 @@ class DenseObservationStore:
             self._flattened = True
 
 
-class SlotArenaObservationStore:
-    """Store compressed observations in a fixed slot arena."""
+class RawObservationStore:
+    """Store compressed observations in a packed raw byte heap."""
 
     def __init__(
         self,
@@ -78,12 +78,12 @@ class SlotArenaObservationStore:
         field_offset: int,
         compress: Callable[..., SlotMetadata],
         decompress: Callable[..., th.Tensor],
-        max_slot_bytes: Optional[int] = None,
         compression_method: str = "rle",
         runs_type: th.dtype = th.uint16,
-        arena: Optional[SlotArena] = None,
+        shared_heap: Optional[SharedRawHeap] = None,
+        n_fields: int = 1,
     ):
-        """Create slot-backed observation storage."""
+        """Create heap-backed observation storage."""
         self.buffer_size = buffer_size
         self.n_envs = n_envs
         self.flat_len = flat_len
@@ -92,28 +92,52 @@ class SlotArenaObservationStore:
         self.field_offset = field_offset
         self._compress = compress
         self._decompress = decompress
-        if max_slot_bytes is None:
-            max_slot_bytes = estimate_max_slot_bytes(flat_len, elem_type, runs_type, compression_method)
-        self.max_slot_bytes = max_slot_bytes
         self._flattened = False
+        self._max_cell_bytes = estimate_max_slot_bytes(
+            flat_len,
+            elem_type,
+            runs_type,
+            compression_method,
+        )
 
-        if arena is None:
-            n_fields = 1 if field_offset == 0 else 2
-            n_slots = buffer_size * n_envs * n_fields
-            self.arena = SlotArena(n_slots, self.max_slot_bytes, device=self.device)
-        else:
-            self.arena = arena
+        if shared_heap is None:
+            raise ValueError("Compressed stores require a shared SharedRawHeap.")
+        self.heap = shared_heap
 
         self.metadata = th.zeros((buffer_size, n_envs, 3), dtype=th.int64, device=self.device)
 
-    def slot_id(self, pos: int, env_idx: int) -> int:
-        """Map buffer coordinates to a global slot id."""
+    def cell_id(self, pos: int, env_idx: int) -> int:
+        """Map buffer coordinates to a global cell id."""
         return self.field_offset * (self.buffer_size * self.n_envs) + pos * self.n_envs + env_idx
 
     def write(self, pos: int, env_idx: int, flat_tensor: th.Tensor):
         """Compress and store a flattened observation."""
-        slot_id = self.slot_id(pos, env_idx)
-        meta = self._compress(flat_tensor, self.arena, slot_id)
+        cell = self.cell_id(pos, env_idx)
+        old_len = int(self.heap.lengths[cell].item())
+        old_start = int(self.heap.start_idx[cell].item()) if old_len > 0 else None
+
+        scratch = self.heap._scratch_buffer(self._max_cell_bytes)
+        meta = self._compress(flat_tensor, scratch, 0)
+        payload_bytes = meta.payload_bytes
+        if payload_bytes > self._max_cell_bytes:
+            raise ValueError(
+                f"Compressed payload ({payload_bytes} bytes) exceeds per-cell cap "
+                f"({self._max_cell_bytes} bytes); increase heap_bytes or max_slot_bytes"
+            )
+
+        if old_len > 0 and payload_bytes <= old_len:
+            final_start = old_start
+            self.heap.lengths[cell] = payload_bytes
+        else:
+            self.heap.ensure_space(payload_bytes)
+            final_start = self.heap.data_end
+            self.heap.start_idx[cell] = final_start
+            self.heap.lengths[cell] = payload_bytes
+            self.heap.data_end = final_start + payload_bytes
+
+        payload = scratch.read_bytes((0, payload_bytes), th.uint8)
+        self.heap.buffer.write_bytes((final_start, payload_bytes), payload)
+
         self.metadata[pos, env_idx, 0] = meta.pos_runs
         self.metadata[pos, env_idx, 1] = meta.pos_elem
         self.metadata[pos, env_idx, 2] = meta.run_length
@@ -123,29 +147,35 @@ class SlotArenaObservationStore:
         if self._flattened:
             flat_idx = _flat_index(self.buffer_size, pos, env_idx)
             return self.read_flat(flat_idx)
-        return self._read_meta(self.metadata[pos, env_idx], self.slot_id(pos, env_idx))
+        return self._read_cell(self.cell_id(pos, env_idx), self.metadata[pos, env_idx])
 
     def read_flat(self, flat_idx: int) -> th.Tensor:
         """Read by flattened index after :meth:`flatten`."""
         pos = flat_idx % self.buffer_size
         env_idx = flat_idx // self.buffer_size
-        slot_id = self.slot_id(pos, env_idx)
-        return self._read_meta(self.metadata.view(-1, 3)[flat_idx], slot_id)
+        cell = self.cell_id(pos, env_idx)
+        return self._read_cell(cell, self.metadata.view(-1, 3)[flat_idx])
 
-    def _read_meta(self, meta_row: th.Tensor, slot_id: int) -> th.Tensor:
+    def _read_cell(self, cell: int, meta_row: th.Tensor) -> th.Tensor:
+        byte_start = int(self.heap.start_idx[cell].item())
         meta = SlotMetadata(
-            slot_id=slot_id,
+            byte_start=byte_start,
             pos_runs=int(meta_row[0].item()),
             pos_elem=int(meta_row[1].item()),
             run_length=int(meta_row[2].item()),
+            payload_bytes=int(self.heap.lengths[cell].item()),
         )
-        return self._decompress(self.arena, meta)
+        return self._decompress(self.heap.buffer, meta)
 
     def flatten(self):
         """Flatten metadata to match rollout ``swap_and_flatten`` ordering."""
         if not self._flattened:
             self.metadata = self.metadata.swapaxes(0, 1).reshape(self.buffer_size * self.n_envs, 3)
             self._flattened = True
+
+    def compact(self) -> None:
+        """Pack the shared heap (no-op when this store does not own the heap)."""
+        self.heap.compact()
 
 
 def create_observation_store(
@@ -158,16 +188,16 @@ def create_observation_store(
     field_offset: int = 0,
     compress: Optional[Callable[..., SlotMetadata]] = None,
     decompress: Optional[Callable[..., th.Tensor]] = None,
-    max_slot_bytes: Optional[int] = None,
     runs_type: th.dtype = th.uint16,
-    shared_arena: Optional[SlotArena] = None,
+    shared_heap: Optional[SharedRawHeap] = None,
+    n_fields: int = 1,
 ):
     """Create the observation store backend for ``compression_method``."""
     if compression_method == "none":
         return DenseObservationStore(buffer_size, n_envs, flat_len, elem_type, device)
     if compress is None or decompress is None:
         raise ValueError("Compressed stores require compress and decompress callables.")
-    return SlotArenaObservationStore(
+    return RawObservationStore(
         buffer_size,
         n_envs,
         flat_len,
@@ -176,8 +206,8 @@ def create_observation_store(
         field_offset,
         compress,
         decompress,
-        max_slot_bytes=max_slot_bytes,
         compression_method=compression_method,
         runs_type=runs_type,
-        arena=shared_arena,
+        shared_heap=shared_heap,
+        n_fields=n_fields,
     )

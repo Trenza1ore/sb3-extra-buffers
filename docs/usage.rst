@@ -118,6 +118,6 @@ See :doc:`api/gpu_buffers` for compression options (``none``, ``rle``, ``zstd``)
 
 .. warning::
 
-   GPU buffers are intended for advanced use. Default slot byte capacity is estimated
+   GPU buffers are intended for advanced use. Default heap byte capacity is estimated
    automatically; **you are responsible** for confirming it is large enough for your
-   observations and codec, or for setting ``max_slot_bytes`` explicitly.
+   observations and codec, or for setting ``heap_bytes`` explicitly.

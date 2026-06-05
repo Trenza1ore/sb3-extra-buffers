@@ -5,7 +5,12 @@ import numpy as np
 import torch as th
 from stable_baselines3 import PPO
 
-from examples.example_train_atari import ATARI_GAME
+from examples.example_train_rollout_mspacman import (
+    ATARI_GAME,
+    BEST_MODEL_DIR,
+    FINAL_MODEL_PATH,
+    FRAMESTACK,
+)
 from sb3_extra_buffers.compressed import DummyCls
 from sb3_extra_buffers.training_utils.atari import make_env
 from sb3_extra_buffers.training_utils.eval_model import eval_model
@@ -18,13 +23,10 @@ CLEAR_SCREEN = True
 if __name__ == "__main__":
     device = "mps" if th.mps.is_available() else "auto"
     render_mode = "human" if RENDER_GAMES else "rgb_array"
-    vec_env = make_env(env_id=ATARI_GAME, n_envs=N_ENVS, framestack=4, render_mode=render_mode)
+    vec_env = make_env(env_id=ATARI_GAME, n_envs=N_ENVS, framestack=FRAMESTACK, render_mode=render_mode)
     if CLEAR_SCREEN:
         os.system("cls" if platform.system() == "Windows" else "clear")
-    for model_path in [
-        "logs/MsPacmanNoFrameskip-v4/ppo/best_model/best_model.zip",
-        "ppo_MsPacman_4.zip",
-    ]:
+    for model_path in [BEST_MODEL_DIR + "/best_model.zip", FINAL_MODEL_PATH]:
         model = PPO.load(
             model_path,
             device=device,

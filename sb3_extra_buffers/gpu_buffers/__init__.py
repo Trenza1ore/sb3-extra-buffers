@@ -4,7 +4,7 @@ __all__ = [
     "GpuReplayBuffer",
     "GpuRolloutBuffer",
     "RawBuffer",
-    "SlotArena",
+    "SharedRawHeap",
     "SlotMetadata",
     "BaseGpuBuffer",
     "find_gpu_buffer_dtypes",
@@ -17,4 +17,4 @@ from sb3_extra_buffers.gpu_buffers.compression_methods import COMPRESSION_METHOD
 from sb3_extra_buffers.gpu_buffers.gpu_replay import GpuReplayBuffer
 from sb3_extra_buffers.gpu_buffers.gpu_rollout import GpuRolloutBuffer
 from sb3_extra_buffers.gpu_buffers.metadata import SlotMetadata
-from sb3_extra_buffers.gpu_buffers.raw_buffer import RawBuffer, SlotArena
+from sb3_extra_buffers.gpu_buffers.raw_buffer import RawBuffer, SharedRawHeap
