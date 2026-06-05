@@ -7,7 +7,7 @@ import numpy as np
 import torch as th
 from stable_baselines3 import PPO
 
-from examples.example_train_atari import ATARI_GAME
+from examples.example_train_rollout_mspacman import ATARI_GAME, BEST_MODEL_DIR, FRAMESTACK
 from sb3_extra_buffers.compressed import DummyCls
 from sb3_extra_buffers.training_utils.atari import make_env
 
@@ -18,12 +18,12 @@ RENDER_GAMES = True
 if __name__ == "__main__":
     device = "mps" if th.mps.is_available() else "auto"
     model = PPO.load(
-        "logs/MsPacmanNoFrameskip-v4/ppo/best_model/best_model.zip",
+        BEST_MODEL_DIR + "/best_model.zip",
         device=device,
         custom_objects=dict(rollout_buffer_class=DummyCls),
     )
     render_mode = "human" if RENDER_GAMES else "rgb_array"
-    vec_env = make_env(env_id=ATARI_GAME, n_envs=1, framestack=4, render_mode=render_mode)
+    vec_env = make_env(env_id=ATARI_GAME, n_envs=1, framestack=FRAMESTACK, render_mode=render_mode)
     obs = vec_env.reset()
 
     # Play the games
